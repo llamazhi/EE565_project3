@@ -5,7 +5,7 @@
     </target>
     <target name="compile" depends="init">
         <!-- <javac srcdir="./" destdir="${build}" includeantruntime="false"/> -->
-        <javac srcdir="./" destdir="" includeantruntime="false"/>
+        <javac srcdir="./src" destdir="./build" includeantruntime="false"/>
     </target>
     <target name="build" depends="compile">
         <java classname="VodServer" classpath="${build}"/>
