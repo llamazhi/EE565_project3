@@ -20,7 +20,7 @@ public class HTTPURIParser {
     }
 
     public boolean hasUDPRequest() {
-        return (this.hasAdd() || this.hasView() || this.hasConfig() || this.hasStatus());
+        return (this.path.contains("peer"));
     }
 
     public String getPath() {

@@ -10,7 +10,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.Collections;
-import org.json.*;
+// import org.json.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 // ThreadedHTTPWorker class is responsible for all the
 // actual string & data transfer
@@ -150,10 +152,23 @@ public class ThreadedHTTPWorker extends Thread {
     }
 
     private void showUUID() {
-        ConfigParser cparser = VodServer.cparser;
-        JSONObject uuid = new JSONObject();
-        uuid.put("uuid", cparser.getConfig("uuid"));
-        System.out.println(uuid.toString());
+        try {
+            ConfigParser cparser = VodServer.cparser;
+            JsonObject uuid = new JsonObject();
+            uuid.addProperty("uuid", cparser.getConfig("uuid"));
+            String uuidStr = uuid.toString();
+            String html = "<html><body><p>" + uuidStr + "</p></body></html>";
+            String response = "HTTP/1.1 200 OK" + this.CRLF +
+                    "Date: " + getGMTDate(new Date()) + this.CRLF +
+                    "Content-Type: text/html" + this.CRLF +
+                    "Content-Length:" + html.getBytes().length + this.CRLF +
+                    this.CRLF + html;
+            // System.out.println(uuid.toString());
+            this.outputStream.writeBytes(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     // store the parameter information
