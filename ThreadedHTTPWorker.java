@@ -86,6 +86,7 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void parseURI(String req, String relativeURL) {
         HTTPURIParser parser = new HTTPURIParser(relativeURL);
+
         if (!parser.hasUDPRequest()) {
             // This is a local request
             String path = parser.getPath();
@@ -113,6 +114,39 @@ public class ThreadedHTTPWorker extends Thread {
             configureRate(parser);
         } else if (parser.hasStatus()) {
             getStatus();
+        } else if (relativeURL.equals("/peer/kill")) {
+            // TODO: interupt the while loop in VodServer
+
+        } else if (relativeURL.equals("/peer/uuid")) {
+            // TODO: return the current node uuid
+
+        } else if (relativeURL.equals("/peer/neighbors")) {
+            // TODO: return the the neighbors of current node
+            // Response: a list of objects representing all active neighbors
+            // [ {“uuid”:“24f22a83-16f4-4bd5-af63-9b5c6e979dbb”, “name”:“node2”,
+            // “host”:“pi.ece.cmu.edu”, “frontend”:18345, “backend”:18346, “metric”:10},
+            // {“uuid”:“24f22a83-16f4-4bd5-af63-9b5c6e979dbb”, “name”:“node3”,
+            // “host”:“mu.ece.cmu.edu”, “frontend”:18345, “backend”:18346, “metric”:20} ]
+        } else if (relativeURL.startsWith("/peer/addneighbor")) {
+            // TODO: add neighbor, modify the current add peer function to do this
+            // example:
+            // /peer/addneighbor?uuid=e94fc272-5611-4a61-8b27de7fe233797f&host=nu.ece.cmu.edu&frontend=18345&backend=18346&metric=30
+
+        } else if (relativeURL.equals("/peer/map")) {
+            // TODO: respond adjacency list for the latest network map.
+            // It should contain only active node/link.
+            // example:
+            // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
+            // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
+
+        } else if (relativeURL.startsWith("/peer/rank/")) {
+            // TODO:
+            // /peer/rank/<content path>
+            // respond an ordered list (sorted by distance metrics) showing the distance
+            // between the requested node and all content nodes.
+
+            // For example,
+            // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -161,6 +195,7 @@ public class ThreadedHTTPWorker extends Thread {
             sendErrorResponse("Please add peer first!");
             return;
         }
+        // TODO: get content from the right server(s)
         String result = udpclient.startClient(path, infos, this.outputStream);
         if (!result.equals("Success")) {
             sendErrorResponse(result);

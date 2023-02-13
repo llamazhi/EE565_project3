@@ -40,6 +40,7 @@ public class UDPServer extends Thread {
 
     @Override
     public void run() {
+        // TODO: every x second send LSP to all the other nodes
         try (DatagramSocket socket = new DatagramSocket(this.port)) {
             System.out.println("UDP Server listening at: " + this.port);
 
@@ -54,6 +55,7 @@ public class UDPServer extends Thread {
     }
 
     private void handleInPacket(DatagramPacket inPkt, DatagramSocket socket) throws IOException {
+        // TODO: handle LSP, store in a list and create a graph
         int seqNum = byteArrayToInt(inPkt.getData());
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;

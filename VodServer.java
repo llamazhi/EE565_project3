@@ -45,6 +45,9 @@ public class VodServer {
     }
 
     public static void main(String[] args) {
+        // TODO: implement method to parse this command "./vodserver –c node.conf"
+        // parse file node.conf into an object
+        // call ConfigParser to do this
         VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
         VodServer.clientReceiveTimestamps = new ArrayList<>();
         ServerSocket server = null;
@@ -61,6 +64,8 @@ public class VodServer {
         UDPServer udpserver = new UDPServer(udpPort);
         udpserver.start();
 
+        // TODO: create another thread for continuously sending LSP
+
         try {
             server = new ServerSocket(httpPort);
             System.out.println("Server started, listening on: " + httpPort);
@@ -69,6 +74,7 @@ public class VodServer {
         }
 
         try {
+            // TODO: change to a variable, isActive, set to false when getting "peer/kill"
             while (true) {
                 Socket client = server.accept();
                 System.out.println("Connection accepted");
