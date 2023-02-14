@@ -4,3 +4,4 @@ http://localhost:8080/peer/config?rate=8192
 http://localhost:8080/peer/status
 http://localhost:8080/Content/test.webm
 http://localhost:8080/peer/uuid
+http://localhost:8080/peer/addneighbor?uuid=e94fc272-5611-4a61-8b27-de7fe233797f&host=localhost&frontend=18345&backend=18346&metric=30

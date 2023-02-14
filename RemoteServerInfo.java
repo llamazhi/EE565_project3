@@ -2,6 +2,7 @@ import java.net.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -16,11 +17,41 @@ public class RemoteServerInfo {
     private int backendPort;
     private String contentDir;
     private int peerCount;
+    private int metric;
+
+    private ArrayList<HashMap<String, String>> neighbors = new ArrayList<HashMap<String, String>>();
 
     public RemoteServerInfo(String hostname, Integer port, Integer rate) throws IOException {
         this.host = InetAddress.getByName(hostname);
         this.port = port;
         this.rate = rate;
+    }
+
+    public RemoteServerInfo(String uuid, String host, String frontend, String backend, String metric)
+            throws IOException {
+        HashMap<String, String> nodeInfo = new HashMap<String, String>();
+        nodeInfo.put("uuid", uuid);
+        nodeInfo.put("host", host);
+        nodeInfo.put("frontend", frontend);
+        nodeInfo.put("backend", backend);
+        nodeInfo.put("metric", metric);
+        this.setNeighborNode(nodeInfo);
+    }
+
+    public void setNeighborNode(HashMap<String, String> neighbor) {
+        this.neighbors.add(neighbor);
+    }
+
+    public ArrayList<HashMap<String, String>> getNeighborNodes() {
+        return this.neighbors;
+    }
+
+    public void setMetric(int metric) {
+        this.metric = metric;
+    }
+
+    public int getMetric() {
+        return this.metric;
     }
 
     public String getUuid() {
@@ -82,9 +113,6 @@ public class RemoteServerInfo {
     public RemoteServerInfo() {
     }
 
-    public void generateNewUUID() {
-    }
-
     public static RemoteServerInfo parseConfigFile(String filepath) throws IOException {
         Map<String, String> configMap = new HashMap<>();
 
@@ -128,9 +156,9 @@ public class RemoteServerInfo {
                 + '}';
     }
 
-    public static void main(String args[]) throws IOException {
-        RemoteServerInfo info = RemoteServerInfo.parseConfigFile(args[0]);
-        System.out.println(info);
-    }
+    // public static void main(String args[]) throws IOException {
+    // RemoteServerInfo info = RemoteServerInfo.parseConfigFile(args[0]);
+    // System.out.println(info);
+    // }
 
 }
