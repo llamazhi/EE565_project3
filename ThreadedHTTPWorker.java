@@ -153,9 +153,9 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showUUID() {
         try {
-            ConfigParser cparser = VodServer.cparser;
+            RemoteServerInfo info = VodServer.getServerInfo();
             JsonObject uuid = new JsonObject();
-            uuid.addProperty("uuid", cparser.getConfig("uuid"));
+            uuid.addProperty("uuid", info.getUuid());
             String uuidStr = uuid.toString();
             String html = "<html><body><p>" + uuidStr + "</p></body></html>";
             String response = "HTTP/1.1 200 OK" + this.CRLF +

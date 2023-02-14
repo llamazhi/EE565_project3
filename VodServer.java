@@ -1,4 +1,5 @@
 import java.io.*;
+import java.io.ObjectInputFilter.Config;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,12 @@ public class VodServer {
     public final static Integer bufferSize = 8192;
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
-    public static ConfigParser cparser;
+    private static RemoteServerInfo serverInfo;
+
+    public VodServer() {
+        VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
+        VodServer.clientReceiveTimestamps = new ArrayList<>();
+    }
 
     public static void addPeer(String filepath, RemoteServerInfo info) {
         if (!VodServer.parameterMap.containsKey(filepath)) {
@@ -45,14 +51,27 @@ public class VodServer {
         return VodServer.parameterMap.get(filepath);
     }
 
+    public static RemoteServerInfo getServerInfo() {
+        return VodServer.serverInfo;
+    }
+
+    public void setServerInfo(RemoteServerInfo config) {
+        VodServer.serverInfo = config;
+    }
+
     public static void main(String[] args) {
         // TODO: implement method to parse this command "./vodserver –c node.conf"
         // parse file node.conf into an object
         // call ConfigParser to do this
-        cparser = new ConfigParser("node.conf");
+        VodServer vodServer = new VodServer();
+        try {
+            RemoteServerInfo config = RemoteServerInfo.parseConfigFile("node.conf");
+            vodServer.setServerInfo(config);
+        } catch (IOException ex) {
+            System.out.println("error while reading config file");
+            return;
+        }
 
-        VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
-        VodServer.clientReceiveTimestamps = new ArrayList<>();
         ServerSocket server = null;
         int httpPort;
         int udpPort;
