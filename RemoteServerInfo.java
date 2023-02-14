@@ -18,26 +18,38 @@ public class RemoteServerInfo {
     private int backendPort;
     private String contentDir;
     private int peerCount;
-    private double metric;
-    private ArrayList<RemoteServerInfo> peers;
+    private int metric;
+
+    private ArrayList<RemoteServerInfo> neighbors = new ArrayList<RemoteServerInfo>();
 
     public RemoteServerInfo(String hostname, Integer port, Integer rate) throws IOException {
         this.host = InetAddress.getByName(hostname);
         this.port = port;
         this.rate = rate;
-        this.peers = new ArrayList<>();
     }
 
-    public String getUuid() {
-        return uuid;
+    public void setNeighbor(RemoteServerInfo neighbor) {
+        this.neighbors.add(neighbor);
     }
 
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
+    public void setMetric(int metric) {
+        this.metric = metric;
+    }
+
+    public int getMetric() {
+        return this.metric;
+    }
+
+    public String getUUID() {
+        return this.uuid;
+    }
+
+    public String getHost() {
+        return this.host.getHostName();
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
     public void setName(String name) {
@@ -45,7 +57,7 @@ public class RemoteServerInfo {
     }
 
     public int getFrontendPort() {
-        return frontendPort;
+        return this.frontendPort;
     }
 
     public void setFrontendPort(int frontendPort) {
@@ -53,7 +65,7 @@ public class RemoteServerInfo {
     }
 
     public int getBackendPort() {
-        return backendPort;
+        return this.backendPort;
     }
 
     public void setBackendPort(int backendPort) {
@@ -61,7 +73,7 @@ public class RemoteServerInfo {
     }
 
     public String getContentDir() {
-        return contentDir;
+        return this.contentDir;
     }
 
     public void setContentDir(String contentDir) {
@@ -69,7 +81,7 @@ public class RemoteServerInfo {
     }
 
     public int getPeerCount() {
-        return peerCount;
+        return this.peerCount;
     }
 
     public void setPeerCount(int peerCount) {
@@ -84,28 +96,21 @@ public class RemoteServerInfo {
         this.host = InetAddress.getByName(hostname);
     }
 
-    public void setMetric(double metric) throws IOException {
-        this.metric = metric;
-    }
-
-    public void setPeer(RemoteServerInfo info) {
-        this.peers.add(info);
-    }
-
     public RemoteServerInfo() {
-        this.peers = new ArrayList<>();
+        this.neighbors = new ArrayList<>();
     }
 
-    public static RemoteServerInfo parsePeer(String name, String info) throws IOException {
-        RemoteServerInfo peer_config = new RemoteServerInfo();
-        String[] values = info.split(",");
-        peer_config.setName(name);
-        peer_config.setUuid(values[0]);
-        peer_config.setHost(values[1]);
-        peer_config.setFrontendPort(Integer.parseInt(values[2]));
-        peer_config.setBackendPort(Integer.parseInt(values[3]));
-        peer_config.setMetric(Double.parseDouble(values[4]));
-        return peer_config;
+    // take in a query of values
+    // Note: the name will come from the other node's RemoteServerInfo
+    public static RemoteServerInfo parsePeer(HashMap<String, String> values) throws IOException {
+        RemoteServerInfo peerConfig = new RemoteServerInfo();
+        // peerConfig.setName(name);
+        peerConfig.setUUID(values.get("uuid"));
+        peerConfig.setHost(values.get("host"));
+        peerConfig.setFrontendPort(Integer.parseInt(values.get("frontend")));
+        peerConfig.setBackendPort(Integer.parseInt(values.get("backend")));
+        peerConfig.setMetric(Integer.parseInt(values.get("metric")));
+        return peerConfig;
     }
 
     public static RemoteServerInfo parseConfigFile(String filepath) throws IOException {
@@ -124,7 +129,7 @@ public class RemoteServerInfo {
             }
         }
 
-        config.setUuid(configMap.get("uuid"));
+        config.setUUID(configMap.get("uuid"));
         config.setName(configMap.get("name"));
         config.setFrontendPort(Integer.parseInt(configMap.get("frontend_port")));
         config.setBackendPort(Integer.parseInt(configMap.get("backend_port")));
@@ -132,18 +137,18 @@ public class RemoteServerInfo {
         config.setPeerCount(Integer.parseInt(configMap.get("peer_count")));
         config.setHost("localhost");
         if (!configMap.containsKey("uuid")) {
-            config.setUuid(UUID.randomUUID().toString());
+            config.setUUID(UUID.randomUUID().toString());
         }
         config.setMetric(0);
-        Pattern pattern = Pattern.compile("peer_[0-9]*");
-        for (Map.Entry<String, String> entry : configMap.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if (pattern.matcher(key).matches()) {
-                System.out.println(value);
-                config.setPeer(RemoteServerInfo.parsePeer(key, value));
-            }
-        }
+        // Pattern pattern = Pattern.compile("peer_[0-9]*");
+        // for (Map.Entry<String, String> entry : configMap.entrySet()) {
+        // String key = entry.getKey();
+        // String value = entry.getValue();
+        // if (pattern.matcher(key).matches()) {
+        // System.out.println(value);
+        // config.setNeighbor(RemoteServerInfo.parsePeer(key, value));
+        // }
+        // }
 
         return config;
     }
@@ -158,13 +163,13 @@ public class RemoteServerInfo {
                 + ", backendPort=" + backendPort
                 + ", contentDir='" + contentDir + '\''
                 + ", peerCount=" + peerCount
-                + ", peers=" + peers
+                + ", peers=" + neighbors
                 + '}';
     }
 
-    public static void main(String args[]) throws IOException {
-        RemoteServerInfo info = RemoteServerInfo.parseConfigFile(args[0]);
-        System.out.println(info);
-    }
+    // public static void main(String args[]) throws IOException {
+    // RemoteServerInfo info = RemoteServerInfo.parseConfigFile(args[0]);
+    // System.out.println(info);
+    // }
 
 }

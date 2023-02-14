@@ -29,7 +29,7 @@ public class HTTPURIParser {
 
     // Return if the uri contains "add" keyword
     public boolean hasAdd() {
-        return this.path.contains("add");
+        return this.path.contains("add") && this.path.contains("path");
     }
 
     // Return if the uri contains "view" keyword
@@ -59,7 +59,7 @@ public class HTTPURIParser {
         return this.path.contains("neighbors");
     }
 
-    public boolean hasAddNeibor() {
+    public boolean hasAddNeighbor() {
         return this.path.contains("addneighbor");
     }
 
