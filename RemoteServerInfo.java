@@ -26,6 +26,7 @@ public class RemoteServerInfo {
         this.port = port;
         this.rate = rate;
         this.peers = new ArrayList<>();
+        this.metric = 0;
     }
 
     public String getUuid() {
@@ -157,6 +158,7 @@ public class RemoteServerInfo {
                 + ", frontendPort=" + frontendPort
                 + ", backendPort=" + backendPort
                 + ", contentDir='" + contentDir + '\''
+                + ", metric='" + metric + '\''
                 + ", peerCount=" + peerCount
                 + ", peers=" + peers
                 + '}';
