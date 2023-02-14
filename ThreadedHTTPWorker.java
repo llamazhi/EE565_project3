@@ -157,12 +157,12 @@ public class ThreadedHTTPWorker extends Thread {
             JsonObject uuid = new JsonObject();
             uuid.addProperty("uuid", info.getUuid());
             String uuidStr = uuid.toString();
-            String html = "<html><body><p>" + uuidStr + "</p></body></html>";
+            // String html = "<html><body><p>" + uuidStr + "</p></body></html>";
             String response = "HTTP/1.1 200 OK" + this.CRLF +
                     "Date: " + getGMTDate(new Date()) + this.CRLF +
-                    "Content-Type: text/html" + this.CRLF +
-                    "Content-Length:" + html.getBytes().length + this.CRLF +
-                    this.CRLF + html;
+                    "Content-Type: application/json" + this.CRLF +
+                    "Content-Length:" + uuidStr.length() + this.CRLF +
+                    this.CRLF + uuid;
             // System.out.println(uuid.toString());
             this.outputStream.writeBytes(response);
         } catch (IOException e) {
