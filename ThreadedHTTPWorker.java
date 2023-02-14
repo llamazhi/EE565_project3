@@ -222,7 +222,7 @@ public class ThreadedHTTPWorker extends Thread {
             String jsonStr = jsonArray.toString();
             String response = "HTTP/1.1 200 OK" + this.CRLF +
                     "Date: " + getGMTDate(new Date()) + this.CRLF +
-                    "Content-Type: text/html" + this.CRLF +
+                    "Content-Type: application/json" + this.CRLF +
                     "Content-Length:" + jsonStr.length() + this.CRLF +
                     this.CRLF + jsonArray;
             this.outputStream.writeBytes(response);
