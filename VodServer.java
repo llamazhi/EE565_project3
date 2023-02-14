@@ -11,6 +11,7 @@ public class VodServer {
     public final static Integer bufferSize = 8192;
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
+    public static ConfigParser cparser;
 
     public static void addPeer(String filepath, RemoteServerInfo info) {
         if (!VodServer.parameterMap.containsKey(filepath)) {
@@ -48,11 +49,15 @@ public class VodServer {
         // TODO: implement method to parse this command "./vodserver –c node.conf"
         // parse file node.conf into an object
         // call ConfigParser to do this
+        cparser = new ConfigParser("node.conf");
+
         VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
         VodServer.clientReceiveTimestamps = new ArrayList<>();
         ServerSocket server = null;
         int httpPort;
         int udpPort;
+
+        // TODO: modify the arguments part
         if (args.length != 2) {
             System.out.println("Usage: java VodServer http-port udp-port");
             return;

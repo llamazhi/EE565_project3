@@ -20,7 +20,7 @@ public class HTTPURIParser {
     }
 
     public boolean hasUDPRequest() {
-        return (this.hasAdd() || this.hasView() || this.hasConfig() || this.hasStatus());
+        return (this.path.contains("peer"));
     }
 
     public String getPath() {
@@ -45,6 +45,30 @@ public class HTTPURIParser {
     // Return if the uri contains "status" keyword
     public boolean hasStatus() {
         return this.path.contains("status");
+    }
+
+    public boolean hasKill() {
+        return this.path.contains("kill");
+    }
+
+    public boolean hasUUID() {
+        return this.path.contains("uuid");
+    }
+
+    public boolean hasNeighbors() {
+        return this.path.contains("neighbors");
+    }
+
+    public boolean hasAddNeibor() {
+        return this.path.contains("addneighbor");
+    }
+
+    public boolean hasMap() {
+        return this.path.contains("map");
+    }
+
+    public boolean hasRank() {
+        return this.path.contains("rank");
     }
 
 }

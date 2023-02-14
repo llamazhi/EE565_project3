@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.Collections;
+// import org.json.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 // ThreadedHTTPWorker class is responsible for all the
 // actual string & data transfer
@@ -114,32 +117,28 @@ public class ThreadedHTTPWorker extends Thread {
             configureRate(parser);
         } else if (parser.hasStatus()) {
             getStatus();
-        } else if (relativeURL.equals("/peer/kill")) {
+        } else if (parser.hasKill()) {
             // TODO: interupt the while loop in VodServer
-
-        } else if (relativeURL.equals("/peer/uuid")) {
+        } else if (parser.hasUUID()) {
             // TODO: return the current node uuid
+            showUUID();
 
-        } else if (relativeURL.equals("/peer/neighbors")) {
+        } else if (parser.hasNeighbors()) {
             // TODO: return the the neighbors of current node
             // Response: a list of objects representing all active neighbors
-            // [ {“uuid”:“24f22a83-16f4-4bd5-af63-9b5c6e979dbb”, “name”:“node2”,
-            // “host”:“pi.ece.cmu.edu”, “frontend”:18345, “backend”:18346, “metric”:10},
-            // {“uuid”:“24f22a83-16f4-4bd5-af63-9b5c6e979dbb”, “name”:“node3”,
-            // “host”:“mu.ece.cmu.edu”, “frontend”:18345, “backend”:18346, “metric”:20} ]
-        } else if (relativeURL.startsWith("/peer/addneighbor")) {
+        } else if (parser.hasAddNeibor()) {
             // TODO: add neighbor, modify the current add peer function to do this
             // example:
             // /peer/addneighbor?uuid=e94fc272-5611-4a61-8b27de7fe233797f&host=nu.ece.cmu.edu&frontend=18345&backend=18346&metric=30
 
-        } else if (relativeURL.equals("/peer/map")) {
+        } else if (parser.hasMap()) {
             // TODO: respond adjacency list for the latest network map.
             // It should contain only active node/link.
             // example:
             // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
             // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
 
-        } else if (relativeURL.startsWith("/peer/rank/")) {
+        } else if (parser.hasRank()) {
             // TODO:
             // /peer/rank/<content path>
             // respond an ordered list (sorted by distance metrics) showing the distance
@@ -150,6 +149,26 @@ public class ThreadedHTTPWorker extends Thread {
         } else {
             sendErrorResponse("Invalid request");
         }
+    }
+
+    private void showUUID() {
+        try {
+            ConfigParser cparser = VodServer.cparser;
+            JsonObject uuid = new JsonObject();
+            uuid.addProperty("uuid", cparser.getConfig("uuid"));
+            String uuidStr = uuid.toString();
+            String html = "<html><body><p>" + uuidStr + "</p></body></html>";
+            String response = "HTTP/1.1 200 OK" + this.CRLF +
+                    "Date: " + getGMTDate(new Date()) + this.CRLF +
+                    "Content-Type: text/html" + this.CRLF +
+                    "Content-Length:" + html.getBytes().length + this.CRLF +
+                    this.CRLF + html;
+            // System.out.println(uuid.toString());
+            this.outputStream.writeBytes(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     // store the parameter information
