@@ -7,6 +7,7 @@ import java.util.HashMap;
 // This is the main driver class for the project
 public class VodServer {
     public static HashMap<String, ArrayList<RemoteServerInfo>> parameterMap;
+    private static ArrayList<RemoteServerInfo> neighbors = new ArrayList<RemoteServerInfo>();
     public static ArrayList<Long> clientReceiveTimestamps;
     public static boolean bitRateChanged = false;
     public final static Integer bufferSize = 8192;
@@ -26,8 +27,12 @@ public class VodServer {
         VodServer.parameterMap.get(filepath).add(info);
     }
 
-    public static void addNeighbor(RemoteServerInfo info) {
-        serverInfo = info;
+    public static void setNeighbor(RemoteServerInfo info) {
+        neighbors.add(info);
+    }
+
+    public static ArrayList<RemoteServerInfo> getNeighbors() {
+        return neighbors;
     }
 
     public static void setCompleteness(double completeness) {

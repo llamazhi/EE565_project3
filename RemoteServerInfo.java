@@ -19,7 +19,7 @@ public class RemoteServerInfo {
     private int peerCount;
     private int metric;
 
-    private ArrayList<HashMap<String, String>> neighbors = new ArrayList<HashMap<String, String>>();
+    private ArrayList<RemoteServerInfo> neighbors = new ArrayList<RemoteServerInfo>();
 
     public RemoteServerInfo(String hostname, Integer port, Integer rate) throws IOException {
         this.host = InetAddress.getByName(hostname);
@@ -29,21 +29,15 @@ public class RemoteServerInfo {
 
     public RemoteServerInfo(String uuid, String host, String frontend, String backend, String metric)
             throws IOException {
-        HashMap<String, String> nodeInfo = new HashMap<String, String>();
-        nodeInfo.put("uuid", uuid);
-        nodeInfo.put("host", host);
-        nodeInfo.put("frontend", frontend);
-        nodeInfo.put("backend", backend);
-        nodeInfo.put("metric", metric);
-        this.setNeighborNode(nodeInfo);
+        this.setUUID(uuid);
+        this.setHost(host);
+        this.setFrontendPort(Integer.parseInt(frontend));
+        this.setBackendPort(Integer.parseInt(backend));
+        this.setMetric(Integer.parseInt(metric));
     }
 
-    public void setNeighborNode(HashMap<String, String> neighbor) {
+    public void setNeighbor(RemoteServerInfo neighbor) {
         this.neighbors.add(neighbor);
-    }
-
-    public ArrayList<HashMap<String, String>> getNeighborNodes() {
-        return this.neighbors;
     }
 
     public void setMetric(int metric) {
@@ -54,16 +48,16 @@ public class RemoteServerInfo {
         return this.metric;
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getUUID() {
+        return this.uuid;
     }
 
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
+    public String getHost() {
+        return this.host.getHostName();
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
     public void setName(String name) {
@@ -71,7 +65,7 @@ public class RemoteServerInfo {
     }
 
     public int getFrontendPort() {
-        return frontendPort;
+        return this.frontendPort;
     }
 
     public void setFrontendPort(int frontendPort) {
@@ -79,7 +73,7 @@ public class RemoteServerInfo {
     }
 
     public int getBackendPort() {
-        return backendPort;
+        return this.backendPort;
     }
 
     public void setBackendPort(int backendPort) {
@@ -87,7 +81,7 @@ public class RemoteServerInfo {
     }
 
     public String getContentDir() {
-        return contentDir;
+        return this.contentDir;
     }
 
     public void setContentDir(String contentDir) {
@@ -95,7 +89,7 @@ public class RemoteServerInfo {
     }
 
     public int getPeerCount() {
-        return peerCount;
+        return this.peerCount;
     }
 
     public void setPeerCount(int peerCount) {
@@ -129,7 +123,7 @@ public class RemoteServerInfo {
             }
         }
 
-        config.setUuid(configMap.get("uuid"));
+        config.setUUID(configMap.get("uuid"));
         config.setName(configMap.get("name"));
         config.setFrontendPort(Integer.parseInt(configMap.get("frontend_port")));
         config.setBackendPort(Integer.parseInt(configMap.get("backend_port")));
@@ -137,7 +131,7 @@ public class RemoteServerInfo {
         config.setPeerCount(Integer.parseInt(configMap.get("peer_count")));
         config.setHost("localhost");
         if (!configMap.containsKey("uuid")) {
-            config.setUuid(UUID.randomUUID().toString());
+            config.setUUID(UUID.randomUUID().toString());
         }
 
         return config;

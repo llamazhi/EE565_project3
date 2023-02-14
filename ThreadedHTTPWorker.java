@@ -13,6 +13,7 @@ import java.util.Collections;
 // import org.json.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 
 // ThreadedHTTPWorker class is responsible for all the
 // actual string & data transfer
@@ -122,13 +123,9 @@ public class ThreadedHTTPWorker extends Thread {
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
-            // TODO: return the the neighbors of current node
-            // Response: a list of objects representing all active neighbors
+            showNeighbors();
 
         } else if (parser.hasAddNeibor()) {
-            // TODO: add neighbor, modify the current add peer function to do this
-            // example:
-            // /peer/addneighbor?uuid=e94fc272-5611-4a61-8b27de7fe233797f&host=nu.ece.cmu.edu&frontend=18345&backend=18346&metric=30
             String[] queries = parser.getQueries();
             addNeighbor(queries);
         } else if (parser.hasMap()) {
@@ -155,9 +152,8 @@ public class ThreadedHTTPWorker extends Thread {
         try {
             RemoteServerInfo info = VodServer.getServerInfo();
             JsonObject uuid = new JsonObject();
-            uuid.addProperty("uuid", info.getUuid());
+            uuid.addProperty("uuid", info.getUUID());
             String uuidStr = uuid.toString();
-            // String html = "<html><body><p>" + uuidStr + "</p></body></html>";
             String response = "HTTP/1.1 200 OK" + this.CRLF +
                     "Date: " + getGMTDate(new Date()) + this.CRLF +
                     "Content-Type: application/json" + this.CRLF +
@@ -188,10 +184,10 @@ public class ThreadedHTTPWorker extends Thread {
             String frontend = keyValue.get("frontend");
             String backend = keyValue.get("backend");
             String metric = keyValue.get("metric");
-            RemoteServerInfo info = new RemoteServerInfo(uuid, host, frontend, backend, metric);
+            RemoteServerInfo neighbor = new RemoteServerInfo(uuid, host, frontend, backend, metric);
 
             // update the RemoteServerInfo in this Thread
-            VodServer.addNeighbor(info);
+            VodServer.setNeighbor(neighbor);
 
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -205,6 +201,32 @@ public class ThreadedHTTPWorker extends Thread {
 
         } catch (NumberFormatException | IOException e) {
             sendErrorResponse("invalid query");
+            e.printStackTrace();
+        }
+    }
+
+    private void showNeighbors() {
+        try {
+            ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
+            JsonArray jsonArray = new JsonArray();
+            for (RemoteServerInfo neighborNode : neighborNodes) {
+                JsonObject node = new JsonObject();
+                node.addProperty("uuid", neighborNode.getUUID());
+                node.addProperty("name", neighborNode.getName());
+                node.addProperty("host", neighborNode.getHost());
+                node.addProperty("frontend", neighborNode.getFrontendPort());
+                node.addProperty("backend", neighborNode.getBackendPort());
+                node.addProperty("metric", neighborNode.getMetric());
+                jsonArray.add(node);
+            }
+            String jsonStr = jsonArray.toString();
+            String response = "HTTP/1.1 200 OK" + this.CRLF +
+                    "Date: " + getGMTDate(new Date()) + this.CRLF +
+                    "Content-Type: text/html" + this.CRLF +
+                    "Content-Length:" + jsonStr.length() + this.CRLF +
+                    this.CRLF + jsonArray;
+            this.outputStream.writeBytes(response);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
