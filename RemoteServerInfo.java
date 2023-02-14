@@ -93,6 +93,10 @@ public class RemoteServerInfo {
         this.peers.add(info);
     }
 
+    public ArrayList<RemoteServerInfo> getPeers() {
+        return this.peers;
+    }
+
     public RemoteServerInfo() {
         this.peers = new ArrayList<>();
     }
