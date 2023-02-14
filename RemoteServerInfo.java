@@ -28,18 +28,6 @@ public class RemoteServerInfo {
         this.rate = rate;
     }
 
-    public void setNeighbor(RemoteServerInfo neighbor) {
-        this.neighbors.add(neighbor);
-    }
-
-    public void setMetric(int metric) {
-        this.metric = metric;
-    }
-
-    public int getMetric() {
-        return this.metric;
-    }
-
     public String getUUID() {
         return this.uuid;
     }
@@ -94,6 +82,18 @@ public class RemoteServerInfo {
 
     public void setHost(String hostname) throws IOException {
         this.host = InetAddress.getByName(hostname);
+    }
+
+    public void setMetric(int metric) throws IOException {
+        this.metric = metric;
+    }
+
+    public int getMetric() {
+        return this.metric;
+    }
+
+    public void setPeer(RemoteServerInfo info) {
+        this.neighbors.add(info);
     }
 
     public RemoteServerInfo() {
@@ -162,6 +162,7 @@ public class RemoteServerInfo {
                 + ", frontendPort=" + frontendPort
                 + ", backendPort=" + backendPort
                 + ", contentDir='" + contentDir + '\''
+                + ", metric='" + metric + '\''
                 + ", peerCount=" + peerCount
                 + ", peers=" + neighbors
                 + '}';
