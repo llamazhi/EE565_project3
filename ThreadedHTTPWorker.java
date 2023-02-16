@@ -1,6 +1,7 @@
 import java.net.*;
 import java.io.*;
 import java.lang.Thread;
+import java.lang.ProcessHandle.Info;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,8 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.Collections;
-// import org.json.*;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 
@@ -139,7 +138,7 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showUUID() {
         try {
-            RemoteServerInfo info = VodServer.getServerInfo();
+            RemoteServerInfo info = VodServer.getHomeNodeInfo();
             JsonObject uuid = new JsonObject();
             uuid.addProperty("uuid", info.getUUID());
             String uuidStr = uuid.toString();
@@ -167,10 +166,15 @@ public class ThreadedHTTPWorker extends Thread {
             }
             System.out.println(keyValue);
 
+            RemoteServerInfo homeNodeInfo = VodServer.getHomeNodeInfo();
             RemoteServerInfo neighbor = RemoteServerInfo.parsePeer(keyValue);
+            homeNodeInfo.setNeighbor(neighbor);
 
-            // update the RemoteServerInfo in this Thread
-            VodServer.setNeighbor(neighbor);
+            // TODO: check if the given neighbor is active
+            if (isActiveNode(neighbor)) {
+                // update the RemoteServerInfo in this Thread
+                VodServer.setNeighbor(neighbor);
+            }
 
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -188,10 +192,9 @@ public class ThreadedHTTPWorker extends Thread {
         }
     }
 
-    private void areActiveNodes(ArrayList<RemoteServerInfo> nodes) {
+    private boolean isActiveNode(RemoteServerInfo node) {
         // TODO: algorighm to check if the neighbor nodes is active
-        // UDPClient udpClient = new UDPClient();
-        // String result = udpClient.startClient(path, infos, this.outputStream);
+        return true;
     }
 
     private void showNeighbors() {
@@ -226,7 +229,7 @@ public class ThreadedHTTPWorker extends Thread {
     // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
     // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
     private void showNeighborMap() {
-        
+
     }
 
     // TODO:

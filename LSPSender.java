@@ -15,7 +15,7 @@ public class LSPSender extends Thread {
             // send link state packet
             byte[] data = new byte[bufferSize];
             VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-            RemoteServerInfo curr = VodServer.getServerInfo();
+            RemoteServerInfo curr = VodServer.getHomeNodeInfo();
             ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
             JsonObject lsp = new JsonObject();
             lsp.add(curr.getUUID(), new JsonArray());

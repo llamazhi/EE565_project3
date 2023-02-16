@@ -99,7 +99,7 @@ public class RemoteServerInfo {
         return this.metric;
     }
 
-    public void setPeer(RemoteServerInfo info) {
+    public void setNeighbor(RemoteServerInfo info) {
         this.neighbors.add(info);
     }
 
@@ -169,7 +169,7 @@ public class RemoteServerInfo {
             String value = entry.getValue();
             if (pattern.matcher(key).matches()) {
                 System.out.println(value);
-                config.setPeer(RemoteServerInfo.parsePeer(key, value));
+                config.setNeighbor(RemoteServerInfo.parsePeer(key, value));
             }
         }
 
