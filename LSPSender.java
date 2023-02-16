@@ -30,8 +30,7 @@ public class LSPSender extends Thread {
                 lsp.getAsJsonArray("neighbors").add(neighborJson);
             }
             System.out.println(lsp);
-            String message = +currentTime + " " + lsp.toString();
-            byte[] messageBytes = message.getBytes();
+            byte[] messageBytes = lsp.toString().getBytes();
             System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
             for (RemoteServerInfo neighbor : neighbors) {
                 DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.host,
