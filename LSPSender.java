@@ -19,13 +19,15 @@ public class LSPSender extends Thread {
             RemoteServerInfo curr = VodServer.getHomeNodeInfo();
             ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
             JsonObject lsp = new JsonObject();
-            lsp.add(curr.getUUID(), new JsonArray());
+            lsp.addProperty("sender", curr.getUUID());
+            lsp.addProperty("timestamp", currentTime);
+            lsp.add("neighbors", new JsonArray());
             for (RemoteServerInfo neighbor : neighbors) {
                 JsonObject neighborJson = new JsonObject();
                 neighborJson.addProperty("uuid", neighbor.getUUID());
                 neighborJson.addProperty("name", neighbor.getName());
                 neighborJson.addProperty("metric", neighbor.getMetric());
-                lsp.getAsJsonArray(curr.getUUID()).add(neighborJson);
+                lsp.getAsJsonArray("neighbors").add(neighborJson);
             }
             System.out.println(lsp);
             String message = +currentTime + " " + lsp.toString();
