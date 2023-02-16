@@ -9,22 +9,6 @@ public class LSPSender extends Thread {
     // private int interval;
     private final static int bufferSize = 8192;
 
-    public static void longToByteArray(long value, byte[] buffer, int offset) {
-        for (int i = 7; i >= 0; i--) {
-            buffer[offset + i] = (byte) (value & 0xff); // bitwise AND to get the least significant byte
-            value >>= 8; // shift the number to the right by 8 bits
-        }
-    }
-
-    public static long byteArrayToLong(byte[] buffer, int offset) {
-        long number = 0L;
-        for (int i = 0; i < 8; i++) {
-            number <<= 8; // shift the number to the left by 8 bits
-            number |= (buffer[offset + i] & 0xff); // bitwise OR to combine the next byte with the number
-        }
-        return number;
-    }
-
     @Override
     public void run() {
         try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -32,7 +16,6 @@ public class LSPSender extends Thread {
             byte[] data = new byte[bufferSize];
             VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
             long currentTime = System.currentTimeMillis();
-            longToByteArray(currentTime, data, 4);
             RemoteServerInfo curr = VodServer.getHomeNodeInfo();
             ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
             JsonObject lsp = new JsonObject();
@@ -45,7 +28,8 @@ public class LSPSender extends Thread {
                 lsp.getAsJsonArray(curr.getUUID()).add(neighborJson);
             }
             System.out.println(lsp);
-            byte[] messageBytes = lsp.toString().getBytes();
+            String message = +currentTime + " " + lsp.toString();
+            byte[] messageBytes = message.getBytes();
             System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
             for (RemoteServerInfo neighbor : neighbors) {
                 DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.host,
