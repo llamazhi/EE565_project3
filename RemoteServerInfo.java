@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public class RemoteServerInfo {
     public InetAddress host;
+    public String hostname;
     public Integer port;
     public Integer rate;
     private String uuid;
@@ -18,12 +19,13 @@ public class RemoteServerInfo {
     private int backendPort;
     private String contentDir;
     private int peerCount;
-    private int metric;
+    private double metric;
 
     private ArrayList<RemoteServerInfo> neighbors = new ArrayList<RemoteServerInfo>();
 
     public RemoteServerInfo(String hostname, Integer port, Integer rate) throws IOException {
         this.host = InetAddress.getByName(hostname);
+        this.hostname = hostname;
         this.port = port;
         this.rate = rate;
     }
@@ -81,19 +83,28 @@ public class RemoteServerInfo {
     }
 
     public void setHost(String hostname) throws IOException {
+        this.hostname = hostname;
         this.host = InetAddress.getByName(hostname);
     }
 
-    public void setMetric(int metric) throws IOException {
+    public String getHostname() {
+        return this.hostname;
+    }
+
+    public void setMetric(double metric) throws IOException {
         this.metric = metric;
     }
 
-    public int getMetric() {
+    public double getMetric() {
         return this.metric;
     }
 
     public void setPeer(RemoteServerInfo info) {
         this.neighbors.add(info);
+    }
+
+    public ArrayList<RemoteServerInfo> getNeighbors() {
+        return this.neighbors;
     }
 
     public RemoteServerInfo() {
@@ -111,6 +122,18 @@ public class RemoteServerInfo {
         peerConfig.setBackendPort(Integer.parseInt(values.get("backend")));
         peerConfig.setMetric(Integer.parseInt(values.get("metric")));
         return peerConfig;
+    }
+
+    public static RemoteServerInfo parsePeer(String name, String info) throws IOException {
+        RemoteServerInfo peer_config = new RemoteServerInfo();
+        String[] values = info.split(",");
+        peer_config.setName(name);
+        peer_config.setUUID(values[0]);
+        peer_config.setHost(values[1]);
+        peer_config.setFrontendPort(Integer.parseInt(values[2]));
+        peer_config.setBackendPort(Integer.parseInt(values[3]));
+        peer_config.setMetric(Double.parseDouble(values[4]));
+        return peer_config;
     }
 
     public static RemoteServerInfo parseConfigFile(String filepath) throws IOException {
@@ -140,15 +163,15 @@ public class RemoteServerInfo {
             config.setUUID(UUID.randomUUID().toString());
         }
         config.setMetric(0);
-        // Pattern pattern = Pattern.compile("peer_[0-9]*");
-        // for (Map.Entry<String, String> entry : configMap.entrySet()) {
-        // String key = entry.getKey();
-        // String value = entry.getValue();
-        // if (pattern.matcher(key).matches()) {
-        // System.out.println(value);
-        // config.setNeighbor(RemoteServerInfo.parsePeer(key, value));
-        // }
-        // }
+        Pattern pattern = Pattern.compile("peer_[0-9]*");
+        for (Map.Entry<String, String> entry : configMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (pattern.matcher(key).matches()) {
+                System.out.println(value);
+                config.setPeer(RemoteServerInfo.parsePeer(key, value));
+            }
+        }
 
         return config;
     }
