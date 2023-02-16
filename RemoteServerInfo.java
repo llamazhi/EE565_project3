@@ -1,7 +1,10 @@
 import java.util.regex.Pattern;
 import java.net.*;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -159,8 +162,15 @@ public class RemoteServerInfo {
         config.setContentDir(configMap.get("content_dir"));
         config.setPeerCount(Integer.parseInt(configMap.get("peer_count")));
         config.setHost("localhost");
+
         if (!configMap.containsKey("uuid")) {
-            config.setUUID(UUID.randomUUID().toString());
+            String uuid = UUID.randomUUID().toString();
+            config.setUUID(uuid);
+            // TODO add uuid back to node.conf
+            BufferedWriter output = new BufferedWriter(new FileWriter(new File(filepath), true));
+            output.newLine();
+            output.write("uuid = " + uuid);
+            output.close();
         }
         config.setMetric(0);
         Pattern pattern = Pattern.compile("peer_[0-9]*");
