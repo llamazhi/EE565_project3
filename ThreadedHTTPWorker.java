@@ -226,7 +226,7 @@ public class ThreadedHTTPWorker extends Thread {
     // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
     // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
     private void showNeighborMap() {
-
+        
     }
 
     // TODO:
