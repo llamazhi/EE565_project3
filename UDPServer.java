@@ -38,6 +38,8 @@ public class UDPServer extends Thread {
                 (bytes[3] & 0xff);
     }
 
+    // TODO: build an adjacency list when getting LSP
+    // deal with TTL
     @Override
     public void run() {
         // TODO: every x second send LSP to all the other nodes

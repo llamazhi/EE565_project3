@@ -67,6 +67,20 @@ public class VodServer {
         VodServer.serverInfo = config;
     }
 
+    public static void intToByteArray(int value, byte[] buffer) {
+        buffer[0] = (byte) (value >>> 24);
+        buffer[1] = (byte) (value >>> 16);
+        buffer[2] = (byte) (value >>> 8);
+        buffer[3] = (byte) value;
+    };
+
+    public static int byteArrayToInt(byte[] bytes) {
+        return (bytes[0] << 24) & 0xff000000 |
+                (bytes[1] << 16) & 0x00ff0000 |
+                (bytes[2] << 8) & 0x0000ff00 |
+                (bytes[3] & 0xff);
+    }
+
     public static void main(String[] args) {
         // TODO: implement method to parse this command "./vodserver –c node.conf"
         // parse file node.conf into an object
@@ -97,6 +111,8 @@ public class VodServer {
         udpserver.start();
 
         // TODO: create another thread for continuously sending LSP
+        LSPSender lspSender = new LSPSender();
+        lspSender.start();
 
         try {
             server = new ServerSocket(httpPort);
