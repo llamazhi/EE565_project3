@@ -10,8 +10,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.Collections;
-// import org.json.*;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 
@@ -120,29 +118,18 @@ public class ThreadedHTTPWorker extends Thread {
             getStatus();
         } else if (parser.hasKill()) {
             // TODO: interupt the while loop in VodServer
+
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
             showNeighbors();
-
         } else if (parser.hasAddNeighbor()) {
             String[] queries = parser.getQueries();
             addNeighbor(queries);
         } else if (parser.hasMap()) {
-            // TODO: respond adjacency list for the latest network map.
-            // It should contain only active node/link.
-            // example:
-            // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
-            // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
-
+            showNeighborMap();
         } else if (parser.hasRank()) {
-            // TODO:
-            // /peer/rank/<content path>
-            // respond an ordered list (sorted by distance metrics) showing the distance
-            // between the requested node and all content nodes.
-
-            // For example,
-            // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
+            showContentRank();
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -150,7 +137,7 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showUUID() {
         try {
-            RemoteServerInfo info = VodServer.getServerInfo();
+            RemoteServerInfo info = VodServer.getHomeNodeInfo();
             JsonObject uuid = new JsonObject();
             uuid.addProperty("uuid", info.getUUID());
             String uuidStr = uuid.toString();
@@ -180,8 +167,11 @@ public class ThreadedHTTPWorker extends Thread {
 
             RemoteServerInfo neighbor = RemoteServerInfo.parsePeer(keyValue);
 
-            // update the RemoteServerInfo in this Thread
-            VodServer.setNeighbor(neighbor);
+            // TODO: check if the given neighbor is active
+            if (isActiveNode(neighbor)) {
+                // update the RemoteServerInfo in this Thread
+                VodServer.setNeighbor(neighbor);
+            }
 
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -197,6 +187,11 @@ public class ThreadedHTTPWorker extends Thread {
             sendErrorResponse("invalid query");
             e.printStackTrace();
         }
+    }
+
+    private boolean isActiveNode(RemoteServerInfo node) {
+        // TODO: algorighm to check if the neighbor nodes is active
+        return true;
     }
 
     private void showNeighbors() {
@@ -223,6 +218,26 @@ public class ThreadedHTTPWorker extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // TODO: respond adjacency list for the latest network map.
+    // It should contain only active node/link.
+    // example:
+    // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
+    // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
+    private void showNeighborMap() {
+
+    }
+
+    // TODO:
+    // /peer/rank/<content path>
+    // respond an ordered list (sorted by distance metrics) showing the distance
+    // between the requested node and all content nodes.
+
+    // For example,
+    // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
+    private void showContentRank() {
+
     }
 
     // store the parameter information
