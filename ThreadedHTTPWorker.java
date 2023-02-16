@@ -120,29 +120,18 @@ public class ThreadedHTTPWorker extends Thread {
             getStatus();
         } else if (parser.hasKill()) {
             // TODO: interupt the while loop in VodServer
+
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
             showNeighbors();
-
         } else if (parser.hasAddNeighbor()) {
             String[] queries = parser.getQueries();
             addNeighbor(queries);
         } else if (parser.hasMap()) {
-            // TODO: respond adjacency list for the latest network map.
-            // It should contain only active node/link.
-            // example:
-            // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
-            // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
-
+            showNeighborMap();
         } else if (parser.hasRank()) {
-            // TODO:
-            // /peer/rank/<content path>
-            // respond an ordered list (sorted by distance metrics) showing the distance
-            // between the requested node and all content nodes.
-
-            // For example,
-            // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
+            showContentRank();
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -199,6 +188,12 @@ public class ThreadedHTTPWorker extends Thread {
         }
     }
 
+    private void areActiveNodes(ArrayList<RemoteServerInfo> nodes) {
+        // TODO: algorighm to check if the neighbor nodes is active
+        // UDPClient udpClient = new UDPClient();
+        // String result = udpClient.startClient(path, infos, this.outputStream);
+    }
+
     private void showNeighbors() {
         try {
             ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
@@ -223,6 +218,26 @@ public class ThreadedHTTPWorker extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // TODO: respond adjacency list for the latest network map.
+    // It should contain only active node/link.
+    // example:
+    // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
+    // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
+    private void showNeighborMap() {
+
+    }
+
+    // TODO:
+    // /peer/rank/<content path>
+    // respond an ordered list (sorted by distance metrics) showing the distance
+    // between the requested node and all content nodes.
+
+    // For example,
+    // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
+    private void showContentRank() {
+
     }
 
     // store the parameter information
