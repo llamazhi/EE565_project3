@@ -10,8 +10,7 @@
     </target>
     <target name="run" depends="compile">
         <java classname="VodServer" fork="true">
-            <arg value="8080"/>
-            <arg value="8081"/>
+            <arg line="-c node1.conf"/>
             <classpath>
                 <pathelement location="."/>
                 <fileset dir="./lib">

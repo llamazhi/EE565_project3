@@ -5,6 +5,12 @@ import java.util.*;
 import java.util.logging.*;
 import java.lang.Thread;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 public class UDPServer extends Thread {
     private final static Logger audit = Logger.getLogger("requests");
 
@@ -16,12 +22,15 @@ public class UDPServer extends Thread {
     private HashMap<String, HashMap<Integer, byte[]>> fileChunks;
     private static int bitSent = 0;
     private final static int MAX_WINDOW_SIZE = 100;
+    private final static double TIME_TO_LIVE = 2000; // set TTL as 2 seconds
+    private HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
 
     public UDPServer(int port) {
         this.port = port;
         this.fileChunks = new HashMap<>();
         this.clientInfos = new HashMap<>();
         this.pathToBitRate = new HashMap<>();
+        this.adjMap = new HashMap<>();
     }
 
     public static void intToByteArray(int value, byte[] buffer) {
@@ -62,7 +71,53 @@ public class UDPServer extends Thread {
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
-        if (seqNum == 0 && !requestString.isEmpty()) {
+        if (seqNum == -1 && !requestString.isEmpty()) {
+            // the packet is LSP
+            JsonObject data = new Gson().fromJson(requestString, JsonObject.class);
+            for (JsonElement neighbor : data.getAsJsonArray("neighbors")) {
+                JsonObject neighborObject = neighbor.getAsJsonObject();
+                System.out.println("in UDPServer");
+                System.out.println("from " + data.get("sender") + " to " + neighbor);
+                if (!this.adjMap.containsKey(data.get("sender").getAsString())) {
+                    this.adjMap.put(data.get("sender").getAsString(), new ArrayList<>());
+                }
+                RemoteServerInfo temp = new RemoteServerInfo();
+                temp.setUUID(neighborObject.get("uuid").getAsString());
+                temp.setMetric(neighborObject.get("metric").getAsDouble());
+                this.adjMap.get(data.get("sender").getAsString()).add(temp);
+                System.out.println(this.adjMap.get(data.get("sender").getAsString()));
+            }
+            // dijkstra
+            PriorityQueue<RemoteServerInfo> minHeap = new PriorityQueue<>(
+                    (a, b) -> Double.compare(a.getMetric(), b.getMetric()));
+            // Set<String> visited = new Set<>();
+            HashMap<String, Double> distance = new HashMap<>();
+            minHeap.offer(VodServer.getHomeNodeInfo());
+            while (!minHeap.isEmpty()) {
+                RemoteServerInfo curr = minHeap.poll();
+                if (distance.containsKey(curr.getUUID()) && distance.get(curr.getUUID()) <= curr.getMetric()) {
+                    continue;
+                }
+                for (RemoteServerInfo neighbor : adjMap.get(curr.getUUID())) {
+                    Double newDistance = distance.get(curr.getUUID()) + neighbor.getMetric();
+                    if (!distance.containsKey(neighbor.getUUID())
+                            || Double.compare(newDistance, distance.get(neighbor.getUUID())) == -1) {
+                        distance.put(neighbor.getUUID(), newDistance);
+                        minHeap.offer(neighbor);
+                    }
+                }
+
+                // shortestPath.put(curr.getUUID(), .distFromSrc);
+                // List<int[]> cities = graph.get(place.city);
+                // for (int[] arr : cities) {
+                // minHeap.add(new City(arr[0], place.distFromSrc + 1, place.costFromSrc +
+                // arr[1]));
+                // }
+
+            }
+            System.out.println(distance);
+
+        } else if (seqNum == 0 && !requestString.isEmpty()) {
             // request for a file
             String[] requestValues = requestString.split(" ");
             String path = requestValues[0];

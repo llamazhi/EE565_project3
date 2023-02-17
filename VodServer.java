@@ -83,9 +83,15 @@ public class VodServer {
         // TODO: implement method to parse this command "./vodserver –c node.conf"
         // parse file node.conf into an object
         // call ConfigParser to do this
+        // TODO: modify the arguments part
+        if (args.length != 2) {
+            System.out.println("Usage: java VodServer -c configfile");
+            return;
+        }
+
         VodServer vodServer = new VodServer();
         try {
-            RemoteServerInfo config = RemoteServerInfo.parseConfigFile("node.conf");
+            RemoteServerInfo config = RemoteServerInfo.parseConfigFile(args[1]);
             vodServer.setServerInfo(config);
         } catch (IOException ex) {
             System.out.println("error while reading config file");
@@ -93,17 +99,10 @@ public class VodServer {
         }
 
         ServerSocket server = null;
-        int httpPort;
-        int udpPort;
 
-        // TODO: modify the arguments part
-        if (args.length != 2) {
-            System.out.println("Usage: java VodServer http-port udp-port");
-            return;
-        }
-
-        httpPort = Integer.parseInt(args[0]);
-        udpPort = Integer.parseInt(args[1]);
+        RemoteServerInfo nodeConfig = VodServer.getHomeNodeInfo();
+        int httpPort = nodeConfig.getFrontendPort();
+        int udpPort = nodeConfig.getBackendPort();
 
         UDPServer udpserver = new UDPServer(udpPort);
         udpserver.start();
