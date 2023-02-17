@@ -27,7 +27,7 @@ public class VodServer {
     }
 
     public static void setNeighbor(RemoteServerInfo info) {
-        homeNodeInfo = info; // update the homeNodeInfo
+        homeNodeInfo.setNeighbor(info); // update the homeNodeInfo
     }
 
     public static ArrayList<RemoteServerInfo> getNeighbors() {

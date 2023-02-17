@@ -165,15 +165,15 @@ public class ThreadedHTTPWorker extends Thread {
             }
             System.out.println(keyValue);
 
-            RemoteServerInfo homeNodeInfo = VodServer.getHomeNodeInfo();
             RemoteServerInfo neighbor = RemoteServerInfo.parsePeer(keyValue);
-            homeNodeInfo.setNeighbor(neighbor);
+            VodServer.setNeighbor(neighbor);
+            System.out.println("neighbors after add: " + VodServer.getNeighbors());
 
             // TODO: check if the given neighbor is active
-            if (isActiveNode(neighbor)) {
-                // update the RemoteServerInfo in this Thread
-                VodServer.setNeighbor(neighbor);
-            }
+            // if (isActiveNode(neighbor)) {
+            // update the RemoteServerInfo in this Thread
+            // VodServer.setNeighbor(neighbor);
+            // }
 
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -199,6 +199,8 @@ public class ThreadedHTTPWorker extends Thread {
     private void showNeighbors() {
         try {
             ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
+            System.out.println("show neighbors: " + neighborNodes);
+
             JsonArray jsonArray = new JsonArray();
             for (RemoteServerInfo neighborNode : neighborNodes) {
                 JsonObject node = new JsonObject();
