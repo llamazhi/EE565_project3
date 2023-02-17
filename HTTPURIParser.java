@@ -39,24 +39,24 @@ public class HTTPURIParser {
 
     // Return if the uri contains "config" keyword
     public boolean hasConfig() {
-        return this.path.startsWith("/peer/config");
+        return this.path.equals("/peer/config");
     }
 
     // Return if the uri contains "status" keyword
     public boolean hasStatus() {
-        return this.path.startsWith("/peer/status");
+        return this.path.equals("/peer/status");
     }
 
     public boolean hasKill() {
-        return this.path.startsWith("/peer/kill");
+        return this.path.equals("/peer/kill");
     }
 
     public boolean hasUUID() {
-        return this.path.startsWith("/peer/uuid");
+        return this.path.equals("/peer/uuid");
     }
 
     public boolean hasNeighbors() {
-        return this.path.startsWith("/peer/neighbors");
+        return this.path.equals("/peer/neighbors");
     }
 
     public boolean hasAddNeighbor() {
@@ -64,7 +64,7 @@ public class HTTPURIParser {
     }
 
     public boolean hasMap() {
-        return this.path.startsWith("/peer/map");
+        return this.path.equals("/peer/map");
     }
 
     public boolean hasRank() {
