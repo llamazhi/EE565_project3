@@ -17,23 +17,17 @@ public class UDPServer extends Thread {
     private HashMap<String, HashMap<Integer, byte[]>> fileChunks;
     private static int bitSent = 0;
     private final static int MAX_WINDOW_SIZE = 100;
-    private final static double TIME_TO_LIVE = 2000; // set TTL as 2 seconds
     private RemoteServerInfo origin;
     private RemoteServerInfo sender;
     private int LSPSeqNum;
     private int TTL;
     private ArrayList<String> peers;
-    // private HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid:
-    // [RemoteServerInfo node2, node3, ...]}
-    // private HashMap<String, String> uuidToName;
 
     public UDPServer(int port) {
         this.port = port;
         this.fileChunks = new HashMap<>();
         this.clientInfos = new HashMap<>();
         this.pathToBitRate = new HashMap<>();
-        // this.adjMap = new HashMap<>();
-        // this.uuidToName = new HashMap<>();
     }
 
     public static void intToByteArray(int value, byte[] buffer) {
