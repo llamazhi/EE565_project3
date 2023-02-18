@@ -23,14 +23,17 @@ public class UDPServer extends Thread {
     private static int bitSent = 0;
     private final static int MAX_WINDOW_SIZE = 100;
     private final static double TIME_TO_LIVE = 2000; // set TTL as 2 seconds
-    private HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
+    // private HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid:
+    // [RemoteServerInfo node2, node3, ...]}
+    // private HashMap<String, String> uuidToName;
 
     public UDPServer(int port) {
         this.port = port;
         this.fileChunks = new HashMap<>();
         this.clientInfos = new HashMap<>();
         this.pathToBitRate = new HashMap<>();
-        this.adjMap = new HashMap<>();
+        // this.adjMap = new HashMap<>();
+        // this.uuidToName = new HashMap<>();
     }
 
     public static void intToByteArray(int value, byte[] buffer) {
@@ -71,34 +74,86 @@ public class UDPServer extends Thread {
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
+        System.out.println("handleInPacket");
+        System.out.println(requestString);
         if (seqNum == -1 && !requestString.isEmpty()) {
             // the packet is LSP
+
+            String[] values = requestString.split(" ");
+            if (values[0].equals("HELLO")) {
+                // HELLO packet
+                if (values[1].equals("AreYouAlive?")) {
+                    // reply Yes
+                    byte[] data = new byte[bufferSize];
+                    VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
+                    RemoteServerInfo neighborInfo = RemoteServerInfo.parsePeer(values[2], values[3]);
+                    RemoteServerInfo nodeConfig = VodServer.getHomeNodeInfo();
+                    String message = "HELLO YES " + nodeConfig.getName() + " " + nodeConfig.toPeerFormat();
+                    byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
+                    System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
+                    DatagramPacket outPkt = new DatagramPacket(data, data.length, neighborInfo.getHost(),
+                            neighborInfo.getBackendPort());
+                    socket.send(outPkt);
+                    return;
+                }
+                if (values[1].equals("YES")) {
+                    // store in activeNeighbor list
+                    RemoteServerInfo neighborInfo = RemoteServerInfo.parsePeer(values[2], values[3]);
+                    VodServer.activeNeighbors.add(neighborInfo);
+                    return;
+                }
+            }
             JsonObject data = new Gson().fromJson(requestString, JsonObject.class);
+            RemoteServerInfo senderInfo = new RemoteServerInfo();
+            senderInfo.setName(data.get("senderName").getAsString());
+            senderInfo.setUUID(data.get("senderUUID").getAsString());
+            if (!VodServer.uuidToName.containsKey(senderInfo.getUUID())) {
+                VodServer.uuidToName.put(senderInfo.getUUID(), senderInfo.getName());
+            }
+            if (!VodServer.adjMap.containsKey(senderInfo.getUUID())) {
+                VodServer.adjMap.put(senderInfo.getUUID(), new ArrayList<>());
+            }
+
             for (JsonElement neighbor : data.getAsJsonArray("neighbors")) {
                 JsonObject neighborObject = neighbor.getAsJsonObject();
-                System.out.println("in UDPServer");
-                System.out.println("from " + data.get("sender") + " to " + neighbor);
-                if (!this.adjMap.containsKey(data.get("sender").getAsString())) {
-                    this.adjMap.put(data.get("sender").getAsString(), new ArrayList<>());
+                RemoteServerInfo neighborInfo = new RemoteServerInfo();
+                neighborInfo.setName(neighborObject.get("neighborName").getAsString());
+                neighborInfo.setUUID(neighborObject.get("neighborUUID").getAsString());
+                neighborInfo.setMetric(neighborObject.get("metric").getAsDouble());
+                VodServer.adjMap.get(senderInfo.getUUID()).add(neighborInfo);
+                if (!VodServer.adjMap.containsKey(neighborInfo.getUUID())) {
+                    VodServer.adjMap.put(neighborInfo.getUUID(), new ArrayList<>());
                 }
-                RemoteServerInfo temp = new RemoteServerInfo();
-                temp.setUUID(neighborObject.get("uuid").getAsString());
-                temp.setMetric(neighborObject.get("metric").getAsDouble());
-                this.adjMap.get(data.get("sender").getAsString()).add(temp);
-                System.out.println(this.adjMap.get(data.get("sender").getAsString()));
+                senderInfo.setMetric(neighborInfo.getMetric());
+                VodServer.adjMap.get(neighborInfo.getUUID()).add(senderInfo);
+                senderInfo.setMetric(0);
+                // this.adjMap.get(temp.getUUID()).add()
+                // data.get("senderUUID").getAsString()).add(temp);
+
             }
+
+            System.out.println("adjMap");
+            System.out.println(VodServer.adjMap.keySet());
             // dijkstra
             PriorityQueue<RemoteServerInfo> minHeap = new PriorityQueue<>(
                     (a, b) -> Double.compare(a.getMetric(), b.getMetric()));
             // Set<String> visited = new Set<>();
             HashMap<String, Double> distance = new HashMap<>();
+            distance.put(VodServer.getHomeNodeInfo().getUUID(), 0.0);
             minHeap.offer(VodServer.getHomeNodeInfo());
             while (!minHeap.isEmpty()) {
                 RemoteServerInfo curr = minHeap.poll();
-                if (distance.containsKey(curr.getUUID()) && distance.get(curr.getUUID()) <= curr.getMetric()) {
-                    continue;
+
+                System.out.println("curr");
+                System.out.println(curr);
+                if (!distance.containsKey(curr.getUUID())) {
+                    distance.put(curr.getUUID(), Double.MAX_VALUE);
                 }
-                for (RemoteServerInfo neighbor : adjMap.get(curr.getUUID())) {
+                // if (distance.containsKey(curr.getUUID()) && distance.get(curr.getUUID()) <=
+                // curr.getMetric()) {
+                // continue;
+                // }
+                for (RemoteServerInfo neighbor : VodServer.adjMap.get(curr.getUUID())) {
                     Double newDistance = distance.get(curr.getUUID()) + neighbor.getMetric();
                     if (!distance.containsKey(neighbor.getUUID())
                             || Double.compare(newDistance, distance.get(neighbor.getUUID())) == -1) {
@@ -115,7 +170,19 @@ public class UDPServer extends Thread {
                 // }
 
             }
+            System.out.println("Dijkstra");
             System.out.println(distance);
+            // flood the LSP to neighbors
+            for (RemoteServerInfo neighborInfo : VodServer.getHomeNodeInfo().getNeighbors()) {
+                if (neighborInfo.getUUID().equals(senderInfo.getUUID())) {
+                    System.out.println("flood");
+                    System.out.println(neighborInfo.getUUID() + " " + senderInfo.getUUID());
+                    DatagramPacket outPkt = new DatagramPacket(inPkt.getData(), inPkt.getLength(),
+                            neighborInfo.getHost(),
+                            neighborInfo.getBackendPort());
+                    socket.send(outPkt);
+                }
+            }
 
         } else if (seqNum == 0 && !requestString.isEmpty()) {
             // request for a file

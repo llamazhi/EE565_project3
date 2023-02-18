@@ -33,7 +33,7 @@ public class UDPClient {
                 String message = path + " " + udpserver.rate;
                 byte[] messageBytes = message.getBytes();
                 System.arraycopy(messageBytes, 0, requestData, 4, messageBytes.length);
-                DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length, udpserver.host,
+                DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length, udpserver.getHost(),
                         udpserver.port);
                 socket.send(outPkt);
             }
@@ -86,7 +86,8 @@ public class UDPClient {
                         if (!seen.contains(i)) {
                             intToByteArray(i, requestData);
                             RemoteServerInfo udpserver = remoteServers.get(i % remoteServers.size());
-                            DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length, udpserver.host,
+                            DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length,
+                                    udpserver.getHost(),
                                     udpserver.port);
                             socket.send(outPkt);
                         }

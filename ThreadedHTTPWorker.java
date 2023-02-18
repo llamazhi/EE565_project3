@@ -92,6 +92,10 @@ public class ThreadedHTTPWorker extends Thread {
         if (!parser.hasUDPRequest()) {
             // This is a local request
             String path = parser.getPath();
+            if (path.equals("/")) {
+                sendErrorResponse("This file is not found in local server.");
+                return;
+            }
             String MIMEType = categorizeFile(path);
             File f = new File(path);
             if (f.exists()) {
@@ -122,6 +126,7 @@ public class ThreadedHTTPWorker extends Thread {
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
+            LSPSender.hello();
             showNeighbors();
         } else if (parser.hasAddNeighbor()) {
             String[] queries = parser.getQueries();
@@ -198,18 +203,22 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showNeighbors() {
         try {
-            ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
-            System.out.println("show neighbors: " + neighborNodes);
-
+            long sleepTime = 3000;
+            System.out.println("wait for hello response for " + sleepTime + " ms");
+            Thread.sleep((sleepTime));
+        } catch (InterruptedException e) {
+            System.out.println("Fail to sleep");
+        }
+        try {
             JsonArray jsonArray = new JsonArray();
-            for (RemoteServerInfo neighborNode : neighborNodes) {
+            for (RemoteServerInfo neighborInfo : VodServer.activeNeighbors) {
                 JsonObject node = new JsonObject();
-                node.addProperty("uuid", neighborNode.getUUID());
-                node.addProperty("name", neighborNode.getName());
-                node.addProperty("host", neighborNode.getHost());
-                node.addProperty("frontend", neighborNode.getFrontendPort());
-                node.addProperty("backend", neighborNode.getBackendPort());
-                node.addProperty("metric", neighborNode.getMetric());
+                node.addProperty("uuid", neighborInfo.getUUID());
+                node.addProperty("name", neighborInfo.getName());
+                node.addProperty("host", neighborInfo.getHostname());
+                node.addProperty("frontend", neighborInfo.getFrontendPort());
+                node.addProperty("backend", neighborInfo.getBackendPort());
+                node.addProperty("metric", neighborInfo.getMetric());
                 jsonArray.add(node);
             }
             String jsonStr = jsonArray.toString();
@@ -222,6 +231,31 @@ public class ThreadedHTTPWorker extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        // try {
+        // ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
+        // System.out.println("show neighbors: " + neighborNodes);
+
+        // JsonArray jsonArray = new JsonArray();
+        // for (RemoteServerInfo neighborNode : neighborNodes) {
+        // JsonObject node = new JsonObject();
+        // node.addProperty("uuid", neighborNode.getUUID());
+        // node.addProperty("name", neighborNode.getName());
+        // node.addProperty("host", neighborNode.getHostname());
+        // node.addProperty("frontend", neighborNode.getFrontendPort());
+        // node.addProperty("backend", neighborNode.getBackendPort());
+        // node.addProperty("metric", neighborNode.getMetric());
+        // jsonArray.add(node);
+        // }
+        // String jsonStr = jsonArray.toString();
+        // String response = "HTTP/1.1 200 OK" + this.CRLF +
+        // "Date: " + getGMTDate(new Date()) + this.CRLF +
+        // "Content-Type: application/json" + this.CRLF +
+        // "Content-Length:" + jsonStr.length() + this.CRLF +
+        // this.CRLF + jsonArray;
+        // this.outputStream.writeBytes(response);
+        // } catch (IOException e) {
+        // e.printStackTrace();
+        // }
     }
 
     // TODO: respond adjacency list for the latest network map.

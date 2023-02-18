@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 // This is the main driver class for the project
 public class VodServer {
@@ -12,10 +13,18 @@ public class VodServer {
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
     private static RemoteServerInfo homeNodeInfo;
+    public static HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
+    public static HashMap<String, String> uuidToName;
+    public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
+    public static HashSet<RemoteServerInfo> activeNeighbors;
 
     public VodServer() {
         VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
         VodServer.clientReceiveTimestamps = new ArrayList<>();
+        VodServer.adjMap = new HashMap<>();
+        VodServer.uuidToName = new HashMap<>();
+        VodServer.LSDB = new HashMap<>();
+        VodServer.activeNeighbors = new HashSet<>();
     }
 
     public static void addPeer(String filepath, RemoteServerInfo info) {
@@ -93,6 +102,17 @@ public class VodServer {
         try {
             RemoteServerInfo config = RemoteServerInfo.parseConfigFile(args[1]);
             vodServer.setServerInfo(config);
+            VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
+            VodServer.uuidToName.put(config.getUUID(), config.getName());
+            for (RemoteServerInfo neighborInfo : config.getNeighbors()) {
+                VodServer.adjMap.get(config.getUUID()).add(neighborInfo);
+                if (!VodServer.adjMap.containsKey(neighborInfo.getUUID())) {
+                    VodServer.adjMap.put(neighborInfo.getUUID(), new ArrayList<>());
+                }
+                config.setMetric(neighborInfo.getMetric());
+                VodServer.adjMap.get(neighborInfo.getUUID()).add(config);
+                config.setMetric(0);
+            }
         } catch (IOException ex) {
             System.out.println("error while reading config file");
             return;
@@ -108,8 +128,8 @@ public class VodServer {
         udpserver.start();
 
         // TODO: create another thread for continuously sending LSP
-        LSPSender lspSender = new LSPSender();
-        lspSender.start();
+        // LSPSender lspSender = new LSPSender();
+        // lspSender.start();
 
         try {
             server = new ServerSocket(httpPort);
