@@ -109,13 +109,16 @@ public class VodServer {
             VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
             VodServer.uuidToName.put(config.getUUID(), config.getName());
             for (RemoteServerInfo neighborInfo : config.getNeighbors()) {
-                VodServer.adjMap.get(config.getUUID()).add(neighborInfo);
-                if (!VodServer.adjMap.containsKey(neighborInfo.getUUID())) {
-                    VodServer.adjMap.put(neighborInfo.getUUID(), new ArrayList<>());
+                RemoteServerInfo end = neighborInfo;
+                RemoteServerInfo start = new RemoteServerInfo();
+                start.setName(config.getName());
+                start.setUUID(config.getUUID());
+                start.setMetric(end.getMetric());
+                VodServer.adjMap.get(start.getUUID()).add(end);
+                if (!VodServer.adjMap.containsKey(end.getUUID())) {
+                    VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
                 }
-                config.setMetric(neighborInfo.getMetric());
-                VodServer.adjMap.get(neighborInfo.getUUID()).add(config);
-                config.setMetric(0);
+                VodServer.adjMap.get(end.getUUID()).add(start);
             }
         } catch (IOException ex) {
             System.out.println("error while reading config file");
