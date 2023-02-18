@@ -203,11 +203,19 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showNeighbors() {
         try {
-            long sleepTime = 3000;
-            System.out.println("wait for hello response for " + sleepTime + " ms");
+            long sleepTime = 1000;
+            System.out.println("wait for neighbors' hello response for " + sleepTime + " ms");
             Thread.sleep((sleepTime));
         } catch (InterruptedException e) {
             System.out.println("Fail to sleep");
+        }
+        boolean allNeighborsActive = true;
+        for (String key : VodServer.prevActiveNeighbors.keySet()) {
+            allNeighborsActive &= VodServer.prevActiveNeighbors.get(key);
+        }
+        if (!allNeighborsActive) {
+            System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
+
         }
         try {
             JsonArray jsonArray = new JsonArray();

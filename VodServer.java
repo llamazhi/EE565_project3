@@ -17,6 +17,8 @@ public class VodServer {
     public static HashMap<String, String> uuidToName;
     public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
     public static HashSet<RemoteServerInfo> activeNeighbors;
+    public static HashMap<String, Boolean> prevActiveNeighbors;
+    public static Integer LSPSeqNum = 1;
 
     public VodServer() {
         VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
@@ -25,6 +27,7 @@ public class VodServer {
         VodServer.uuidToName = new HashMap<>();
         VodServer.LSDB = new HashMap<>();
         VodServer.activeNeighbors = new HashSet<>();
+        VodServer.prevActiveNeighbors = new HashMap<>();
     }
 
     public static void addPeer(String filepath, RemoteServerInfo info) {
@@ -101,6 +104,7 @@ public class VodServer {
         VodServer vodServer = new VodServer();
         try {
             RemoteServerInfo config = RemoteServerInfo.parseConfigFile(args[1]);
+            System.out.println("server uuid: " + config.getUUID());
             vodServer.setServerInfo(config);
             VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
             VodServer.uuidToName.put(config.getUUID(), config.getName());
