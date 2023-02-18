@@ -178,7 +178,6 @@ public class RemoteServerInfo {
             String key = entry.getKey();
             String value = entry.getValue();
             if (pattern.matcher(key).matches()) {
-                System.out.println(value);
                 config.setNeighbor(RemoteServerInfo.parsePeer(key, value));
             }
         }

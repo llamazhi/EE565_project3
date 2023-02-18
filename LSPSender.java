@@ -8,6 +8,8 @@ public class LSPSender extends Thread {
     // private RemoteServerInfo serverInfo;
     // private int interval;
     private final static int bufferSize = 8192;
+    private static int seqNum = 0;
+    private final static int TTL = 10;
 
     // send HELLO to neighbors
     public static void hello() {
@@ -40,23 +42,22 @@ public class LSPSender extends Thread {
             // send link state packet
             byte[] data = new byte[bufferSize];
             VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-            long currentTime = System.currentTimeMillis();
+            LSPSender.seqNum += 1;
             RemoteServerInfo curr = VodServer.getHomeNodeInfo();
+            String message = "LSPSeqNum=" + LSPSender.seqNum + " "
+                    + "TTL=" + LSPSender.TTL + " "
+                    + "senderName=" + curr.getName() + " "
+                    + "senderInfo=" + curr.toPeerFormat() + " "
+                    + "originName=" + curr.getName() + " "
+                    + "originInfo=" + curr.toPeerFormat() + " ";
             ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
-            JsonObject lsp = new JsonObject();
-            lsp.addProperty("senderUUID", curr.getUUID());
-            lsp.addProperty("senderName", curr.getName());
-            lsp.addProperty("timestamp", currentTime);
-            lsp.add("neighbors", new JsonArray());
+            int peer_count = 0;
             for (RemoteServerInfo neighbor : neighbors) {
-                JsonObject neighborJson = new JsonObject();
-                neighborJson.addProperty("neighborUUID", neighbor.getUUID());
-                neighborJson.addProperty("neighborName", neighbor.getName());
-                neighborJson.addProperty("metric", neighbor.getMetric());
-                lsp.getAsJsonArray("neighbors").add(neighborJson);
+                peer_count++;
+                message += "peer_" + peer_count + "=" + neighbor.toPeerFormat() + " ";
             }
-            System.out.println(lsp);
-            byte[] messageBytes = lsp.toString().getBytes();
+            System.out.println(message);
+            byte[] messageBytes = message.getBytes();
             System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
             for (RemoteServerInfo neighbor : neighbors) {
                 DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.getHost(),

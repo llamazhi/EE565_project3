@@ -1,3 +1,4 @@
+import java.util.regex.Pattern;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
@@ -23,6 +24,11 @@ public class UDPServer extends Thread {
     private static int bitSent = 0;
     private final static int MAX_WINDOW_SIZE = 100;
     private final static double TIME_TO_LIVE = 2000; // set TTL as 2 seconds
+    private RemoteServerInfo origin;
+    private RemoteServerInfo sender;
+    private int LSPSeqNum;
+    private int TTL;
+    private ArrayList<String> peers;
     // private HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid:
     // [RemoteServerInfo node2, node3, ...]}
     // private HashMap<String, String> uuidToName;
@@ -48,6 +54,43 @@ public class UDPServer extends Thread {
                 (bytes[1] << 16) & 0x00ff0000 |
                 (bytes[2] << 8) & 0x0000ff00 |
                 (bytes[3] & 0xff);
+    }
+
+    private void parseLSP(String LSPData) throws IOException {
+        String[] lines = LSPData.split(" ");
+        Map<String, String> configMap = new HashMap<>();
+
+        for (int i = 0; i < lines.length; i++) {
+            String[] keyValue = lines[i].split("=");
+            if (keyValue.length == 2) {
+                configMap.put(keyValue[0].trim(), keyValue[1].trim());
+            }
+        }
+
+        this.origin = RemoteServerInfo.parsePeer(configMap.get("originName"), configMap.get("originInfo"));
+        this.sender = RemoteServerInfo.parsePeer(configMap.get("senderName"), configMap.get("senderInfo"));
+        this.TTL = Integer.parseInt(configMap.get("TTL"));
+        this.LSPSeqNum = Integer.parseInt(configMap.get("LSPSeqNum"));
+        Pattern pattern = Pattern.compile("peer_[0-9]*");
+        this.peers = new ArrayList<>();
+        for (Map.Entry<String, String> entry : configMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (pattern.matcher(key).matches()) {
+                this.peers.add(value);
+            }
+        }
+    }
+
+    private String LSPToString() {
+        RemoteServerInfo curr = VodServer.getHomeNodeInfo();
+        String message = "LSPSeqNum=" + this.LSPSeqNum + " "
+                + "TTL=" + this.TTL + " "
+                + "senderName=" + curr.getName() + " "
+                + "senderInfo=" + curr.toPeerFormat() + " "
+                + "originName=" + this.origin.getName() + " "
+                + "originInfo=" + this.origin.toPeerFormat() + " ";
+        return message;
     }
 
     // TODO: build an adjacency list when getting LSP
@@ -103,33 +146,31 @@ public class UDPServer extends Thread {
                     return;
                 }
             }
-            JsonObject data = new Gson().fromJson(requestString, JsonObject.class);
-            RemoteServerInfo senderInfo = new RemoteServerInfo();
-            senderInfo.setName(data.get("senderName").getAsString());
-            senderInfo.setUUID(data.get("senderUUID").getAsString());
-            if (!VodServer.uuidToName.containsKey(senderInfo.getUUID())) {
-                VodServer.uuidToName.put(senderInfo.getUUID(), senderInfo.getName());
-            }
-            if (!VodServer.adjMap.containsKey(senderInfo.getUUID())) {
-                VodServer.adjMap.put(senderInfo.getUUID(), new ArrayList<>());
-            }
 
-            for (JsonElement neighbor : data.getAsJsonArray("neighbors")) {
-                JsonObject neighborObject = neighbor.getAsJsonObject();
-                RemoteServerInfo neighborInfo = new RemoteServerInfo();
-                neighborInfo.setName(neighborObject.get("neighborName").getAsString());
-                neighborInfo.setUUID(neighborObject.get("neighborUUID").getAsString());
-                neighborInfo.setMetric(neighborObject.get("metric").getAsDouble());
-                VodServer.adjMap.get(senderInfo.getUUID()).add(neighborInfo);
-                if (!VodServer.adjMap.containsKey(neighborInfo.getUUID())) {
-                    VodServer.adjMap.put(neighborInfo.getUUID(), new ArrayList<>());
+            this.parseLSP(requestString);
+            if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
+                if (this.LSPSeqNum <= VodServer.LSDB.get(this.origin.getUUID())) {
+                    // already flooded this LSP
+                    return;
                 }
-                senderInfo.setMetric(neighborInfo.getMetric());
-                VodServer.adjMap.get(neighborInfo.getUUID()).add(senderInfo);
-                senderInfo.setMetric(0);
-                // this.adjMap.get(temp.getUUID()).add()
-                // data.get("senderUUID").getAsString()).add(temp);
+            }
+            VodServer.LSDB.put(this.origin.getUUID(), this.LSPSeqNum);
+            VodServer.uuidToName.put(this.sender.getUUID(), this.sender.getName());
+            VodServer.uuidToName.put(this.origin.getUUID(), this.origin.getName());
 
+            if (!VodServer.adjMap.containsKey(origin.getUUID())) {
+                VodServer.adjMap.put(origin.getUUID(), new ArrayList<>());
+            }
+
+            for (String peer : this.peers) {
+                RemoteServerInfo neighbor = RemoteServerInfo.parsePeer("", peer);
+                VodServer.adjMap.get(origin.getUUID()).add(neighbor);
+                if (!VodServer.adjMap.containsKey(neighbor.getUUID())) {
+                    VodServer.adjMap.put(neighbor.getUUID(), new ArrayList<>());
+                }
+                origin.setMetric(neighbor.getMetric());
+                VodServer.adjMap.get(neighbor.getUUID()).add(origin);
+                origin.setMetric(0);
             }
 
             System.out.println("adjMap");
@@ -174,15 +215,22 @@ public class UDPServer extends Thread {
             System.out.println(distance);
             // flood the LSP to neighbors
             for (RemoteServerInfo neighborInfo : VodServer.getHomeNodeInfo().getNeighbors()) {
-                if (neighborInfo.getUUID().equals(senderInfo.getUUID())) {
+                if (!neighborInfo.getUUID().equals(sender.getUUID())) {
                     System.out.println("flood");
-                    System.out.println(neighborInfo.getUUID() + " " + senderInfo.getUUID());
-                    DatagramPacket outPkt = new DatagramPacket(inPkt.getData(), inPkt.getLength(),
+                    System.out.println(neighborInfo.getUUID() + " " + sender.getUUID());
+                    byte[] data = new byte[bufferSize];
+                    VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
+                    String message = this.LSPToString();
+                    byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
+                    System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
+                    DatagramPacket outPkt = new DatagramPacket(data, data.length,
                             neighborInfo.getHost(),
                             neighborInfo.getBackendPort());
                     socket.send(outPkt);
                 }
             }
+            System.out.println("LSDB");
+            System.out.println(VodServer.LSDB);
 
         } else if (seqNum == 0 && !requestString.isEmpty()) {
             // request for a file

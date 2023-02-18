@@ -128,8 +128,8 @@ public class VodServer {
         udpserver.start();
 
         // TODO: create another thread for continuously sending LSP
-        // LSPSender lspSender = new LSPSender();
-        // lspSender.start();
+        LSPSender lspSender = new LSPSender();
+        lspSender.start();
 
         try {
             server = new ServerSocket(httpPort);
