@@ -1,3 +1,4 @@
+import java.util.regex.Pattern;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
@@ -16,6 +17,11 @@ public class UDPServer extends Thread {
     private HashMap<String, HashMap<Integer, byte[]>> fileChunks;
     private static int bitSent = 0;
     private final static int MAX_WINDOW_SIZE = 100;
+    private RemoteServerInfo origin;
+    private RemoteServerInfo sender;
+    private int LSPSeqNum;
+    private int TTL;
+    private ArrayList<String> peers;
 
     public UDPServer(int port) {
         this.port = port;
@@ -38,11 +44,50 @@ public class UDPServer extends Thread {
                 (bytes[3] & 0xff);
     }
 
+    private void parseLSP(String LSPData) throws IOException {
+        String[] lines = LSPData.split(" ");
+        Map<String, String> configMap = new HashMap<>();
+
+        for (int i = 0; i < lines.length; i++) {
+            String[] keyValue = lines[i].split("=");
+            if (keyValue.length == 2) {
+                configMap.put(keyValue[0].trim(), keyValue[1].trim());
+            }
+        }
+
+        this.origin = RemoteServerInfo.parsePeer(configMap.get("originName"), configMap.get("originInfo"));
+        this.sender = RemoteServerInfo.parsePeer(configMap.get("senderName"), configMap.get("senderInfo"));
+        this.TTL = Integer.parseInt(configMap.get("TTL"));
+        this.LSPSeqNum = Integer.parseInt(configMap.get("LSPSeqNum"));
+        Pattern pattern = Pattern.compile("peer_[0-9]*");
+        this.peers = new ArrayList<>();
+        for (Map.Entry<String, String> entry : configMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (pattern.matcher(key).matches()) {
+                this.peers.add(value);
+            }
+        }
+    }
+
+    private String LSPToString() {
+        RemoteServerInfo curr = VodServer.getHomeNodeInfo();
+        String message = "LSPSeqNum=" + this.LSPSeqNum + " "
+                + "TTL=" + this.TTL + " "
+                + "senderName=" + curr.getName() + " "
+                + "senderInfo=" + curr.toPeerFormat() + " "
+                + "originName=" + this.origin.getName() + " "
+                + "originInfo=" + this.origin.toPeerFormat() + " ";
+        for (int i = 0; i < this.peers.size(); i++) {
+            message += this.peers.get(i);
+        }
+        return message;
+    }
+
     // TODO: build an adjacency list when getting LSP
     // deal with TTL
     @Override
     public void run() {
-        // TODO: every x second send LSP to all the other nodes
         try (DatagramSocket socket = new DatagramSocket(this.port)) {
             System.out.println("UDP Server listening at: " + this.port);
 
@@ -57,12 +102,118 @@ public class UDPServer extends Thread {
     }
 
     private void handleInPacket(DatagramPacket inPkt, DatagramSocket socket) throws IOException {
-        // TODO: handle LSP, store in a list and create a graph
         int seqNum = byteArrayToInt(inPkt.getData());
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
-        if (seqNum == 0 && !requestString.isEmpty()) {
+        if (seqNum == -1 && !requestString.isEmpty()) {
+            // the packet is LSP
+
+            String[] values = requestString.split(" ");
+            if (values[0].equals("HELLO")) {
+                // HELLO packet
+                if (values[1].equals("AreYouAlive?")) {
+                    // reply Yes
+                    byte[] data = new byte[bufferSize];
+                    VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
+                    RemoteServerInfo neighborInfo = RemoteServerInfo.parsePeer(values[2], values[3]);
+                    RemoteServerInfo nodeConfig = VodServer.getHomeNodeInfo();
+                    nodeConfig.setMetric(neighborInfo.getMetric());
+                    String message = "HELLO YES " + nodeConfig.getName() + " " + nodeConfig.toPeerFormat();
+                    byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
+                    System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
+                    DatagramPacket outPkt = new DatagramPacket(data, data.length, neighborInfo.getHost(),
+                            neighborInfo.getBackendPort());
+                    socket.send(outPkt);
+                    nodeConfig.setMetric(0);
+                    return;
+                }
+                if (values[1].equals("YES")) {
+                    // store in activeNeighbor list
+                    RemoteServerInfo neighborInfo = RemoteServerInfo.parsePeer(values[2], values[3]);
+                    VodServer.activeNeighbors.add(neighborInfo);
+                    return;
+                }
+            }
+
+            this.parseLSP(requestString);
+            if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
+                if (this.LSPSeqNum <= VodServer.LSDB.get(this.origin.getUUID())) {
+                    // already flooded this LSP
+                    return;
+                }
+            }
+            // new LSP
+            VodServer.LSDB.put(this.origin.getUUID(), this.LSPSeqNum);
+            VodServer.uuidToName.put(this.sender.getUUID(), this.sender.getName());
+            VodServer.uuidToName.put(this.origin.getUUID(), this.origin.getName());
+
+            if (!VodServer.adjMap.containsKey(this.origin.getUUID())) {
+                VodServer.adjMap.put(this.origin.getUUID(), new ArrayList<>());
+            }
+
+            // add edges to adjMap
+            for (String peer : this.peers) {
+                RemoteServerInfo end = RemoteServerInfo.parsePeer("", peer);
+                RemoteServerInfo start = new RemoteServerInfo();
+                start.setName(this.origin.getName());
+                start.setUUID(this.origin.getUUID());
+                start.setMetric(end.getMetric());
+
+                VodServer.adjMap.get(start.getUUID()).add(end);
+                if (!VodServer.adjMap.containsKey(end.getUUID())) {
+                    VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
+                }
+                VodServer.adjMap.get(end.getUUID()).add(start);
+            }
+
+            // dijkstra
+            PriorityQueue<RemoteServerInfo> minHeap = new PriorityQueue<>(
+                    (a, b) -> Double.compare(a.getMetric(), b.getMetric()));
+            HashMap<String, Double> distance = new HashMap<>();
+            distance.put(VodServer.getHomeNodeInfo().getUUID(), 0.0);
+            minHeap.offer(VodServer.getHomeNodeInfo());
+            while (!minHeap.isEmpty()) {
+                // get the shortest edge
+                RemoteServerInfo curr = minHeap.poll();
+                // if we didn't visit before, create an entry in distance map
+                if (!distance.containsKey(curr.getUUID())) {
+                    distance.put(curr.getUUID(), Double.MAX_VALUE);
+                }
+                // iterate through its neighbors
+                for (RemoteServerInfo neighbor : VodServer.adjMap.get(curr.getUUID())) {
+                    Double newDistance = distance.get(curr.getUUID()) + neighbor.getMetric();
+                    if (!distance.containsKey(neighbor.getUUID())
+                            || Double.compare(newDistance, distance.get(neighbor.getUUID())) == -1) {
+                        distance.put(neighbor.getUUID(), newDistance);
+                        minHeap.offer(neighbor);
+                    }
+                }
+
+            }
+
+            // System.out.println("Dijkstra");
+            // for (Map.Entry<String, Double> entry : distance.entrySet()) {
+            // System.out.println("node: " + entry.getKey());
+            // System.out.println("distance: " + entry.getValue());
+            // }
+
+            // flood the LSP to neighbors
+            this.sender = VodServer.getHomeNodeInfo();
+            for (RemoteServerInfo neighborInfo : VodServer.getHomeNodeInfo().getNeighbors()) {
+                if (!neighborInfo.getUUID().equals(sender.getUUID())) {
+                    byte[] data = new byte[bufferSize];
+                    VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
+                    String message = this.LSPToString(); // create new LSP message
+                    byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
+                    System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
+                    DatagramPacket outPkt = new DatagramPacket(data, data.length,
+                            neighborInfo.getHost(),
+                            neighborInfo.getBackendPort());
+                    socket.send(outPkt);
+                }
+            }
+        } else if (seqNum == 0 && !requestString.isEmpty()) {
             // request for a file
             String[] requestValues = requestString.split(" ");
             String path = requestValues[0];

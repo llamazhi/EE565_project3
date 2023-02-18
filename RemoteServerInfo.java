@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class RemoteServerInfo {
-    public InetAddress host;
-    public String hostname;
+    private InetAddress host;
+    private String hostname;
     public Integer port;
     public Integer rate;
     private String uuid;
@@ -37,8 +37,8 @@ public class RemoteServerInfo {
         return this.uuid;
     }
 
-    public String getHost() {
-        return this.host.getHostName();
+    public InetAddress getHost() {
+        return this.host;
     }
 
     public String getName() {
@@ -131,11 +131,11 @@ public class RemoteServerInfo {
         RemoteServerInfo peer_config = new RemoteServerInfo();
         String[] values = info.split(",");
         peer_config.setName(name);
-        peer_config.setUUID(values[0]);
-        peer_config.setHost(values[1]);
-        peer_config.setFrontendPort(Integer.parseInt(values[2]));
-        peer_config.setBackendPort(Integer.parseInt(values[3]));
-        peer_config.setMetric(Double.parseDouble(values[4]));
+        peer_config.setUUID(values[0].trim());
+        peer_config.setHost(values[1].trim());
+        peer_config.setFrontendPort(Integer.parseInt(values[2].trim()));
+        peer_config.setBackendPort(Integer.parseInt(values[3].trim()));
+        peer_config.setMetric(Double.parseDouble(values[4].trim()));
         return peer_config;
     }
 
@@ -178,7 +178,6 @@ public class RemoteServerInfo {
             String key = entry.getKey();
             String value = entry.getValue();
             if (pattern.matcher(key).matches()) {
-                System.out.println(value);
                 config.setNeighbor(RemoteServerInfo.parsePeer(key, value));
             }
         }
@@ -186,18 +185,31 @@ public class RemoteServerInfo {
         return config;
     }
 
+    public String toPeerFormat() {
+        return this.getUUID() + ","
+                + this.getHostname() + ","
+                + this.getFrontendPort() + ","
+                + this.getBackendPort() + ","
+                + this.getMetric();
+    }
+
     @Override
     public String toString() {
+        // return "RemoteServerInfo{"
+        // + "uuid='" + uuid + '\''
+        // + ", host='" + host + '\''
+        // + ", name='" + name + '\''
+        // + ", frontendPort=" + frontendPort
+        // + ", backendPort=" + backendPort
+        // + ", contentDir='" + contentDir + '\''
+        // + ", metric='" + metric + '\''
+        // + ", peerCount=" + peerCount
+        // + ", peers=" + neighbors
+        // + '}';
         return "RemoteServerInfo{"
                 + "uuid='" + uuid + '\''
-                + ", host='" + host + '\''
                 + ", name='" + name + '\''
-                + ", frontendPort=" + frontendPort
-                + ", backendPort=" + backendPort
-                + ", contentDir='" + contentDir + '\''
                 + ", metric='" + metric + '\''
-                + ", peerCount=" + peerCount
-                + ", peers=" + neighbors
                 + '}';
     }
 
