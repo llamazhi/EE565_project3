@@ -127,9 +127,9 @@ public class ThreadedHTTPWorker extends Thread {
             String[] queries = parser.getQueries();
             addNeighbor(queries);
         } else if (parser.hasMap()) {
-            showNeighborMap();
+            // showNeighborMap();
         } else if (parser.hasRank()) {
-            showContentRank();
+            // showContentRank();
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -229,9 +229,29 @@ public class ThreadedHTTPWorker extends Thread {
     // example:
     // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
     // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
-    private void showNeighborMap() {
+    // private void showNeighborMap() {
+    // // get data from adjMap
+    // try {
+    // HashMap<String, ArrayList<RemoteServerInfo>> adjMap = getAdjMap();
+    // JsonArray jsonArray = new JsonArray();
+    // for (String name : adjMap.keySet()) {
+    // JsonObject node = new JsonObject();
+    // node.addProperty(name, adjMap.get(name).toString());
 
-    }
+    // jsonArray.add(node);
+    // }
+    // String jsonStr = jsonArray.toString();
+    // String response = "HTTP/1.1 200 OK" + this.CRLF +
+    // "Date: " + getGMTDate(new Date()) + this.CRLF +
+    // "Content-Type: application/json" + this.CRLF +
+    // "Content-Length:" + jsonStr.length() + this.CRLF +
+    // this.CRLF + jsonArray;
+    // this.outputStream.writeBytes(response);
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+
+    // }
 
     // TODO:
     // /peer/rank/<content path>
@@ -240,9 +260,27 @@ public class ThreadedHTTPWorker extends Thread {
 
     // For example,
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
-    private void showContentRank() {
+    // private void showContentRank() {
+    // try {
+    // HashMap<String, ArrayList<RemoteServerInfo>> adjMap = getRank();
+    // JsonArray jsonArray = new JsonArray();
+    // for (String name : adjMap.keySet()) {
+    // JsonObject node = new JsonObject();
+    // node.addProperty(name, adjMap.get(name).toString());
 
-    }
+    // jsonArray.add(node);
+    // }
+    // String jsonStr = jsonArray.toString();
+    // String response = "HTTP/1.1 200 OK" + this.CRLF +
+    // "Date: " + getGMTDate(new Date()) + this.CRLF +
+    // "Content-Type: application/json" + this.CRLF +
+    // "Content-Length:" + jsonStr.length() + this.CRLF +
+    // this.CRLF + jsonArray;
+    // this.outputStream.writeBytes(response);
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+    // }
 
     // store the parameter information
     private void addPeer(String[] queries) {
