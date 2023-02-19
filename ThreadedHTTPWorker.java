@@ -8,7 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.Collections;
 import com.google.gson.JsonObject;
@@ -122,8 +121,7 @@ public class ThreadedHTTPWorker extends Thread {
         } else if (parser.hasStatus()) {
             getStatus();
         } else if (parser.hasKill()) {
-            // TODO: interupt the while loop in VodServer
-            System.exit(1);
+            System.exit(0);
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {

@@ -108,10 +108,6 @@ public class VodServer {
     }
 
     public static void main(String[] args) {
-        // TODO: implement method to parse this command "./vodserver –c node.conf"
-        // parse file node.conf into an object
-        // call ConfigParser to do this
-        // TODO: modify the arguments part
         if (args.length != 2) {
             System.out.println("Usage: java VodServer -c configfile");
             return;

@@ -158,8 +158,8 @@ public class UDPServer extends Thread {
                 VodServer.adjMap.put(this.origin.getUUID(), new ArrayList<>());
             }
 
+            // TODO: Find a way to update the end name
             // add edges to adjMap
-            // TODO: adjMap adds edge every time
             // each param contains info directly from the node config file
             // in the form of:
             // uuid, host, frontend, backend, metric
