@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.Collections;
 import com.google.gson.JsonObject;
@@ -122,7 +123,7 @@ public class ThreadedHTTPWorker extends Thread {
             getStatus();
         } else if (parser.hasKill()) {
             // TODO: interupt the while loop in VodServer
-
+            System.exit(1);
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
@@ -132,9 +133,9 @@ public class ThreadedHTTPWorker extends Thread {
             String[] queries = parser.getQueries();
             addNeighbor(queries);
         } else if (parser.hasMap()) {
-            // showNeighborMap();
+            showNeighborMap();
         } else if (parser.hasRank()) {
-            // showContentRank();
+            showContentRank(parser.getPath());
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -142,7 +143,7 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void showUUID() {
         try {
-            RemoteServerInfo info = VodServer.getHomeNodeInfo();
+            NodeInfo info = VodServer.getHomeNodeInfo();
             JsonObject uuid = new JsonObject();
             uuid.addProperty("uuid", info.getUUID());
             String uuidStr = uuid.toString();
@@ -170,15 +171,9 @@ public class ThreadedHTTPWorker extends Thread {
             }
             System.out.println(keyValue);
 
-            RemoteServerInfo neighbor = RemoteServerInfo.parsePeer(keyValue);
+            NodeInfo neighbor = NodeInfo.parseNeighbor(keyValue);
             VodServer.setNeighbor(neighbor);
             System.out.println("neighbors after add: " + VodServer.getNeighbors());
-
-            // TODO: check if the given neighbor is active
-            // if (isActiveNode(neighbor)) {
-            // update the RemoteServerInfo in this Thread
-            // VodServer.setNeighbor(neighbor);
-            // }
 
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -196,12 +191,8 @@ public class ThreadedHTTPWorker extends Thread {
         }
     }
 
-    private boolean isActiveNode(RemoteServerInfo node) {
-        // TODO: algorighm to check if the neighbor nodes is active
-        return true;
-    }
-
-    private void showNeighbors() {
+    private void checkNeighborsActive() {
+        LSPSender.hello();
         try {
             long sleepTime = 1000;
             System.out.println("wait for neighbors' hello response for " + sleepTime + " ms");
@@ -215,11 +206,14 @@ public class ThreadedHTTPWorker extends Thread {
         }
         if (!allNeighborsActive) {
             System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
-
         }
+    }
+
+    private void showNeighbors() {
+        checkNeighborsActive();
         try {
             JsonArray jsonArray = new JsonArray();
-            for (RemoteServerInfo neighborInfo : VodServer.activeNeighbors) {
+            for (NodeInfo neighborInfo : VodServer.activeNeighbors) {
                 JsonObject node = new JsonObject();
                 node.addProperty("uuid", neighborInfo.getUUID());
                 node.addProperty("name", neighborInfo.getName());
@@ -239,61 +233,45 @@ public class ThreadedHTTPWorker extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // try {
-        // ArrayList<RemoteServerInfo> neighborNodes = VodServer.getNeighbors();
-        // System.out.println("show neighbors: " + neighborNodes);
-
-        // JsonArray jsonArray = new JsonArray();
-        // for (RemoteServerInfo neighborNode : neighborNodes) {
-        // JsonObject node = new JsonObject();
-        // node.addProperty("uuid", neighborNode.getUUID());
-        // node.addProperty("name", neighborNode.getName());
-        // node.addProperty("host", neighborNode.getHostname());
-        // node.addProperty("frontend", neighborNode.getFrontendPort());
-        // node.addProperty("backend", neighborNode.getBackendPort());
-        // node.addProperty("metric", neighborNode.getMetric());
-        // jsonArray.add(node);
-        // }
-        // String jsonStr = jsonArray.toString();
-        // String response = "HTTP/1.1 200 OK" + this.CRLF +
-        // "Date: " + getGMTDate(new Date()) + this.CRLF +
-        // "Content-Type: application/json" + this.CRLF +
-        // "Content-Length:" + jsonStr.length() + this.CRLF +
-        // this.CRLF + jsonArray;
-        // this.outputStream.writeBytes(response);
-        // } catch (IOException e) {
-        // e.printStackTrace();
-        // }
     }
 
-    // TODO: respond adjacency list for the latest network map.
-    // It should contain only active node/link.
-    // example:
-    // { “node1”:{“node2”:10,”node3”:20}, “node2”:{“node1”:10,”node3”:20},
-    // “node3”:{“node1”:20,”node2”:10,“node4”:30}, “node4”:{“node3”:30} }
-    // private void showNeighborMap() {
-    // // get data from adjMap
-    // try {
-    // HashMap<String, ArrayList<RemoteServerInfo>> adjMap = getAdjMap();
-    // JsonArray jsonArray = new JsonArray();
-    // for (String name : adjMap.keySet()) {
-    // JsonObject node = new JsonObject();
-    // node.addProperty(name, adjMap.get(name).toString());
+    private void showNeighborMap() {
+        checkNeighborsActive();
+        try {
+            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            // System.out.println("adj map: " + adjMap);
+            HashMap<String, String> uuidToName = VodServer.getUUIDToName();
+            JsonObject homeNodeObj = new JsonObject();
+            for (String uuid : adjMap.keySet()) {
+                String homeNodeName = "";
+                if (!uuidToName.containsKey(uuid)) {
+                    homeNodeName = uuid;
+                } else {
+                    homeNodeName = uuidToName.get(uuid);
+                }
 
-    // jsonArray.add(node);
-    // }
-    // String jsonStr = jsonArray.toString();
-    // String response = "HTTP/1.1 200 OK" + this.CRLF +
-    // "Date: " + getGMTDate(new Date()) + this.CRLF +
-    // "Content-Type: application/json" + this.CRLF +
-    // "Content-Length:" + jsonStr.length() + this.CRLF +
-    // this.CRLF + jsonArray;
-    // this.outputStream.writeBytes(response);
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // }
-
-    // }
+                ArrayList<NodeInfo> edgesInfo = adjMap.get(uuid);
+                JsonObject nodeObj = new JsonObject();
+                for (NodeInfo edge : edgesInfo) {
+                    String neighborName = edge.getName();
+                    double metric = edge.getMetric();
+                    nodeObj.addProperty(neighborName, metric);
+                    nodeObj.addProperty(neighborName, metric);
+                }
+                // System.out.println("neighbors info: " + edgesInfo);
+                homeNodeObj.add(homeNodeName, nodeObj);
+            }
+            String jsonStr = homeNodeObj.toString();
+            String response = "HTTP/1.1 200 OK" + this.CRLF +
+                    "Date: " + getGMTDate(new Date()) + this.CRLF +
+                    "Content-Type: application/json" + this.CRLF +
+                    "Content-Length:" + jsonStr.length() + this.CRLF +
+                    this.CRLF + homeNodeObj;
+            this.outputStream.writeBytes(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     // TODO:
     // /peer/rank/<content path>
@@ -302,27 +280,32 @@ public class ThreadedHTTPWorker extends Thread {
 
     // For example,
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
-    // private void showContentRank() {
-    // try {
-    // HashMap<String, ArrayList<RemoteServerInfo>> adjMap = getRank();
-    // JsonArray jsonArray = new JsonArray();
-    // for (String name : adjMap.keySet()) {
-    // JsonObject node = new JsonObject();
-    // node.addProperty(name, adjMap.get(name).toString());
+    private void showContentRank(String filePath) {
+        try {
+            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            for (String uuid : adjMap.keySet()) {
 
-    // jsonArray.add(node);
-    // }
-    // String jsonStr = jsonArray.toString();
-    // String response = "HTTP/1.1 200 OK" + this.CRLF +
-    // "Date: " + getGMTDate(new Date()) + this.CRLF +
-    // "Content-Type: application/json" + this.CRLF +
-    // "Content-Length:" + jsonStr.length() + this.CRLF +
-    // this.CRLF + jsonArray;
-    // this.outputStream.writeBytes(response);
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // }
-    // }
+            }
+
+            System.out.println("adjMap: " + adjMap);
+            JsonArray jsonArray = new JsonArray();
+            for (String name : adjMap.keySet()) {
+                JsonObject node = new JsonObject();
+                node.addProperty(name, adjMap.get(name).toString());
+
+                jsonArray.add(node);
+            }
+            String jsonStr = jsonArray.toString();
+            String response = "HTTP/1.1 200 OK" + this.CRLF +
+                    "Date: " + getGMTDate(new Date()) + this.CRLF +
+                    "Content-Type: application/json" + this.CRLF +
+                    "Content-Length:" + jsonStr.length() + this.CRLF +
+                    this.CRLF + jsonArray;
+            this.outputStream.writeBytes(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     // store the parameter information
     private void addPeer(String[] queries) {
@@ -340,7 +323,7 @@ public class ThreadedHTTPWorker extends Thread {
             int port = Integer.parseInt(keyValue.get("port"));
             String host = keyValue.get("host");
             int rate = Integer.parseInt(keyValue.get("rate"));
-            RemoteServerInfo info = new RemoteServerInfo(host, port, rate);
+            NodeInfo info = new NodeInfo(host, port, rate);
             VodServer.addPeer(path, info);
             // Pass the queries to backend port
             // At this stage, we just print them out
@@ -362,7 +345,7 @@ public class ThreadedHTTPWorker extends Thread {
         UDPClient udpclient = new UDPClient();
 
         System.out.println(path);
-        ArrayList<RemoteServerInfo> infos = VodServer.getRemoteServerInfo(path);
+        ArrayList<NodeInfo> infos = VodServer.getRemoteServerInfo(path);
         if (infos == null) {
             sendErrorResponse("Please add peer first!");
             return;

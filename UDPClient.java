@@ -21,7 +21,7 @@ public class UDPClient {
                 (bytes[3] & 0xff);
     }
 
-    public String startClient(String path, ArrayList<RemoteServerInfo> remoteServers, DataOutputStream outputStream) {
+    public String startClient(String path, ArrayList<NodeInfo> remoteNodes, DataOutputStream outputStream) {
         try (DatagramSocket socket = new DatagramSocket(0)) {
             // send request packet
 
@@ -29,7 +29,7 @@ public class UDPClient {
             byte[] receiveData = new byte[bufferSize];
             intToByteArray(0, requestData);
 
-            for (RemoteServerInfo udpserver : remoteServers) {
+            for (NodeInfo udpserver : remoteNodes) {
                 String message = path + " " + udpserver.rate;
                 byte[] messageBytes = message.getBytes();
                 System.arraycopy(messageBytes, 0, requestData, 4, messageBytes.length);
@@ -85,7 +85,7 @@ public class UDPClient {
                     for (int i = windowStart; i <= windowEnd; i++) {
                         if (!seen.contains(i)) {
                             intToByteArray(i, requestData);
-                            RemoteServerInfo udpserver = remoteServers.get(i % remoteServers.size());
+                            NodeInfo udpserver = remoteNodes.get(i % remoteNodes.size());
                             DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length,
                                     udpserver.getHost(),
                                     udpserver.port);

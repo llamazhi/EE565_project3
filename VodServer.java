@@ -6,22 +6,22 @@ import java.util.HashSet;
 
 // This is the main driver class for the project
 public class VodServer {
-    public static HashMap<String, ArrayList<RemoteServerInfo>> parameterMap;
+    public static HashMap<String, ArrayList<NodeInfo>> parameterMap;
     public static ArrayList<Long> clientReceiveTimestamps;
     public static boolean bitRateChanged = false;
     public final static Integer bufferSize = 8192;
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
-    private static RemoteServerInfo homeNodeInfo;
-    public static HashMap<String, ArrayList<RemoteServerInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
+    private static NodeInfo homeNodeInfo;
+    public static HashMap<String, ArrayList<NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
     public static HashMap<String, String> uuidToName;
     public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
-    public static HashSet<RemoteServerInfo> activeNeighbors;
+    public static HashSet<NodeInfo> activeNeighbors;
     public static HashMap<String, Boolean> prevActiveNeighbors;
     public static Integer LSPSeqNum = 1;
 
     public VodServer() {
-        VodServer.parameterMap = new HashMap<String, ArrayList<RemoteServerInfo>>();
+        VodServer.parameterMap = new HashMap<String, ArrayList<NodeInfo>>();
         VodServer.clientReceiveTimestamps = new ArrayList<>();
         VodServer.adjMap = new HashMap<>();
         VodServer.uuidToName = new HashMap<>();
@@ -30,18 +30,22 @@ public class VodServer {
         VodServer.prevActiveNeighbors = new HashMap<>();
     }
 
-    public static void addPeer(String filepath, RemoteServerInfo info) {
+    public static void addPeer(String filepath, NodeInfo info) {
         if (!VodServer.parameterMap.containsKey(filepath)) {
-            VodServer.parameterMap.put(filepath, new ArrayList<RemoteServerInfo>());
+            VodServer.parameterMap.put(filepath, new ArrayList<NodeInfo>());
         }
         VodServer.parameterMap.get(filepath).add(info);
     }
 
-    public static void setNeighbor(RemoteServerInfo info) {
+    public static HashMap<String, ArrayList<NodeInfo>> getParameterMap() {
+        return VodServer.parameterMap;
+    }
+
+    public static void setNeighbor(NodeInfo info) {
         homeNodeInfo.setNeighbor(info); // update the homeNodeInfo
     }
 
-    public static ArrayList<RemoteServerInfo> getNeighbors() {
+    public static ArrayList<NodeInfo> getNeighbors() {
         return homeNodeInfo.getNeighbors();
     }
 
@@ -65,15 +69,27 @@ public class VodServer {
         return VodServer.bitRate;
     }
 
-    public static ArrayList<RemoteServerInfo> getRemoteServerInfo(String filepath) {
+    public static ArrayList<NodeInfo> getRemoteServerInfo(String filepath) {
         return VodServer.parameterMap.get(filepath);
     }
 
-    public static RemoteServerInfo getHomeNodeInfo() {
+    public static NodeInfo getHomeNodeInfo() {
         return VodServer.homeNodeInfo;
     }
 
-    public void setServerInfo(RemoteServerInfo config) {
+    public static HashMap<String, ArrayList<NodeInfo>> getAdjMap() {
+        return VodServer.adjMap;
+    }
+
+    public static HashMap<String, String> getUUIDToName() {
+        return uuidToName;
+    }
+
+    public static void setUUIDToName(String uuid, String name) {
+        VodServer.uuidToName.put(uuid, name);
+    }
+
+    public void setServerInfo(NodeInfo config) {
         VodServer.homeNodeInfo = config;
     }
 
@@ -103,22 +119,22 @@ public class VodServer {
 
         VodServer vodServer = new VodServer();
         try {
-            RemoteServerInfo config = RemoteServerInfo.parseConfigFile(args[1]);
+            NodeInfo config = NodeInfo.parseConfigFile(args[1]);
             System.out.println("server uuid: " + config.getUUID());
             vodServer.setServerInfo(config);
-            VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
-            VodServer.uuidToName.put(config.getUUID(), config.getName());
-            for (RemoteServerInfo neighborInfo : config.getNeighbors()) {
-                RemoteServerInfo end = neighborInfo;
-                RemoteServerInfo start = new RemoteServerInfo();
+            // VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
+            // VodServer.uuidToName.put(config.getUUID(), config.getName());
+            for (NodeInfo neighborInfo : config.getNeighbors()) {
+                NodeInfo end = neighborInfo;
+                NodeInfo start = new NodeInfo();
                 start.setName(config.getName());
                 start.setUUID(config.getUUID());
                 start.setMetric(end.getMetric());
-                VodServer.adjMap.get(start.getUUID()).add(end);
-                if (!VodServer.adjMap.containsKey(end.getUUID())) {
-                    VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
-                }
-                VodServer.adjMap.get(end.getUUID()).add(start);
+                // VodServer.adjMap.get(start.getUUID()).add(end);
+                // if (!VodServer.adjMap.containsKey(end.getUUID())) {
+                // VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
+                // }
+                // VodServer.adjMap.get(end.getUUID()).add(start);
             }
         } catch (IOException ex) {
             System.out.println("error while reading config file");
@@ -127,7 +143,7 @@ public class VodServer {
 
         ServerSocket server = null;
 
-        RemoteServerInfo nodeConfig = VodServer.getHomeNodeInfo();
+        NodeInfo nodeConfig = VodServer.getHomeNodeInfo();
         int httpPort = nodeConfig.getFrontendPort();
         int udpPort = nodeConfig.getBackendPort();
 

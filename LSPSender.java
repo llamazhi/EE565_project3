@@ -13,7 +13,7 @@ public class LSPSender extends Thread {
     public static void hello() {
         // store the old neighbors
         VodServer.prevActiveNeighbors.clear();
-        for (RemoteServerInfo neighbor : VodServer.activeNeighbors) {
+        for (NodeInfo neighbor : VodServer.activeNeighbors) {
             VodServer.prevActiveNeighbors.put(neighbor.getUUID(), false);
         }
         // clear old active neighbors
@@ -24,11 +24,11 @@ public class LSPSender extends Thread {
             // send hello link state packet
             byte[] data = new byte[bufferSize];
             VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-            RemoteServerInfo curr = VodServer.getHomeNodeInfo();
-            ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
-            for (RemoteServerInfo neighbor : neighbors) {
+            NodeInfo curr = VodServer.getHomeNodeInfo();
+            ArrayList<NodeInfo> neighbors = curr.getNeighbors();
+            for (NodeInfo neighbor : neighbors) {
                 curr.setMetric(neighbor.getMetric());
-                String message = "HELLO AreYouAlive? " + curr.getName() + " " + curr.toPeerFormat();
+                String message = "HELLO AreYouAlive? " + curr.getName() + " " + curr.toNeighborFormat();
                 byte[] messageBytes = message.toString().getBytes();
                 System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
                 DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.getHost(),
@@ -48,22 +48,24 @@ public class LSPSender extends Thread {
                 // send link state packet
                 byte[] data = new byte[bufferSize];
                 VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-                RemoteServerInfo curr = VodServer.getHomeNodeInfo();
+                NodeInfo curr = VodServer.getHomeNodeInfo();
+                System.out.println("curr node: " + curr.getName());
+                // System.out.println("curr LSPseqNum: " + VodServer.LSPSeqNum);
                 String message = "LSPSeqNum=" + VodServer.LSPSeqNum + " "
                         + "TTL=" + LSPSender.TTL + " "
                         + "senderName=" + curr.getName() + " "
-                        + "senderInfo=" + curr.toPeerFormat() + " "
+                        + "senderInfo=" + curr.toNeighborFormat() + " "
                         + "originName=" + curr.getName() + " "
-                        + "originInfo=" + curr.toPeerFormat() + " ";
-                ArrayList<RemoteServerInfo> neighbors = curr.getNeighbors();
+                        + "originInfo=" + curr.toNeighborFormat() + " ";
+                ArrayList<NodeInfo> neighbors = curr.getNeighbors();
                 int peer_count = 0;
-                for (RemoteServerInfo neighbor : neighbors) {
-                    message += "peer_" + peer_count + "=" + neighbor.toPeerFormat() + " ";
+                for (NodeInfo neighbor : neighbors) {
+                    message += "peer_" + peer_count + "=" + neighbor.toNeighborFormat() + " ";
                     peer_count++;
                 }
                 byte[] messageBytes = message.getBytes();
                 System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
-                for (RemoteServerInfo neighbor : neighbors) {
+                for (NodeInfo neighbor : neighbors) {
                     DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.getHost(),
                             neighbor.getBackendPort());
                     socket.send(outPkt);

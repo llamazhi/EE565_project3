@@ -1,11 +1,13 @@
-http://localhost:8080/peer/add?path=Content/test.webm&host=localhost&port=8081&rate=1000
-http://localhost:8080/peer/view/Content/test.webm
-http://localhost:8080/peer/config?rate=8192
-http://localhost:8080/peer/status
-http://localhost:8080/Content/test.webm
-http://localhost:8080/peer/uuid
-http://localhost:8080/peer/addneighbor?uuid=e94fc272-5611-4a61-8b27-de7fe233797f&host=localhost&frontend=18345&backend=18346&metric=30
-http://localhost:8080/peer/neighbors
+http://localhost:18345/peer/add?path=Content/test.webm&host=localhost&port=18346&rate=1000
+http://localhost:18345/peer/view/Content/test.webm
+http://localhost:18345/peer/config?rate=8192
+http://localhost:18345/peer/status
+http://localhost:18345/Content/test.webm
+http://localhost:18345/peer/uuid
+http://localhost:18345/peer/addneighbor?uuid=e94fc272-5611-4a61-8b27-de7fe233797f&host=localhost&frontend=18345&backend=18346&metric=30
+http://localhost:18345/peer/neighbors
+http://localhost:18345/peer/map
+http://localhost:18345/peer/rank/Content/test.webm
 
 javac -cp ".;lib/gson.jar" *.java
 java -cp ".;lib/gson.jar" VodServer -c node1.conf
