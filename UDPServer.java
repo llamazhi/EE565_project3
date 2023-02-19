@@ -131,13 +131,13 @@ public class UDPServer extends Thread {
             VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
 
             if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
-                if (this.LSPSeqNum <= VodServer.LSDB.get(this.origin.getUUID())) {
+                if (this.LSPTimestamp <= VodServer.LSDB.get(this.origin.getUUID())) {
                     // already flooded this LSP
                     return;
                 }
             }
             // new LSP
-            VodServer.LSDB.put(this.origin.getUUID(), this.LSPSeqNum);
+            VodServer.LSDB.put(this.origin.getUUID(), this.LSPTimestamp);
 
             if (!VodServer.adjMap.containsKey(this.origin.getUUID())) {
                 VodServer.adjMap.put(this.origin.getUUID(), new HashMap<>());

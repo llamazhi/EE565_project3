@@ -54,6 +54,21 @@ public class LSPSender extends Thread {
     @Override
     public void run() {
         while (true) {
+            for (int i = 0; i < 5; i++) {
+                LSPSender.hello();
+                if (VodServer.LSPSeqNum != this.prevLSPSeqNum) {
+                    this.prevLSPSeqNum = VodServer.LSPSeqNum;
+                    break;
+                }
+                try {
+                    long sleepTime = 1000; // send a HELLO every 1000 ms
+                    Thread.sleep((sleepTime));
+                } catch (InterruptedException e) {
+                    System.out.println("Fail to sleep");
+                }
+            }
+            // if the LSPSeqNum doesn't change, which mean neighbors status are the same,
+            // wait 5000 ms before sending the next LSP
             try (DatagramSocket socket = new DatagramSocket(0)) {
                 // send link state packet
                 byte[] data = new byte[bufferSize];
@@ -73,18 +88,6 @@ public class LSPSender extends Thread {
                 }
             } catch (IOException ex) {
                 System.out.println("SocketCannotOpenError");
-            }
-            // if the LSPSeqNum doesn't change, which mean neighbors status are the same,
-            // wait 5000 ms before sending the next LSP
-            if (VodServer.LSPSeqNum == this.prevLSPSeqNum) {
-                try {
-                    long sleepTime = 5000; // send a LSP every 5000 ms
-                    Thread.sleep((sleepTime));
-                } catch (InterruptedException e) {
-                    System.out.println("Fail to sleep");
-                }
-            } else {
-                this.prevLSPSeqNum = VodServer.LSPSeqNum;
             }
         }
     }

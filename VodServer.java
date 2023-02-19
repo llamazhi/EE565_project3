@@ -17,7 +17,7 @@ public class VodServer {
     private static NodeInfo homeNodeInfo;
     public static HashMap<String, HashMap<String, NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
     public static HashMap<String, String> uuidToName;
-    public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
+    public static HashMap<String, Long> LSDB; // Link State Database (origin uuid, timestamp)
     public static HashSet<NodeInfo> activeNeighbors = new HashSet<NodeInfo>();
     public static HashMap<String, Boolean> prevActiveNeighbors;
     public static Integer LSPSeqNum = 1;
