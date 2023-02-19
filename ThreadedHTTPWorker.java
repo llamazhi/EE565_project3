@@ -236,7 +236,7 @@ public class ThreadedHTTPWorker extends Thread {
     private void showNeighborMap() {
         checkNeighborsActive();
         try {
-            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             // System.out.println("adj map: " + adjMap);
             HashMap<String, String> uuidToName = VodServer.getUUIDToName();
             JsonObject homeNodeObj = new JsonObject();
@@ -248,13 +248,21 @@ public class ThreadedHTTPWorker extends Thread {
                     homeNodeName = uuidToName.get(uuid);
                 }
 
-                ArrayList<NodeInfo> edgesInfo = adjMap.get(uuid);
+                HashMap<String, NodeInfo> neighbors = adjMap.get(uuid);
                 JsonObject nodeObj = new JsonObject();
-                for (NodeInfo edge : edgesInfo) {
-                    String neighborName = edge.getName();
-                    double metric = edge.getMetric();
+                Long currentTime = System.currentTimeMillis();
+                for (String neighborUUID : neighbors.keySet()) {
+                    NodeInfo neighborInfo = neighbors.get(neighborUUID);
+                    // check TTL
+                    if (currentTime - neighborInfo.getTimestamp() >= 1000 * 10) {
+                        // information outdated
+                        continue;
+                    }
+
+                    String neighborName = neighborInfo.getName();
+                    double metric = neighborInfo.getMetric();
                     nodeObj.addProperty(neighborName, metric);
-                    nodeObj.addProperty(neighborName, metric);
+                    System.out.println(nodeObj);
                 }
                 // System.out.println("neighbors info: " + edgesInfo);
                 homeNodeObj.add(homeNodeName, nodeObj);
@@ -280,7 +288,7 @@ public class ThreadedHTTPWorker extends Thread {
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
     private void showContentRank(String filePath) {
         try {
-            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             for (String uuid : adjMap.keySet()) {
 
             }

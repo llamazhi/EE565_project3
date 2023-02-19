@@ -9,21 +9,21 @@ import java.lang.Thread;
 public class UDPServer extends Thread {
     private final static Logger audit = Logger.getLogger("requests");
 
-    private int port;
-    private static int numChunks;
-    private final static int bufferSize = 8192;
+    private Integer port;
+    private static Integer numChunks;
+    private final static Integer bufferSize = 8192;
     private HashMap<SocketAddress, String> clientInfos;
     private HashMap<String, Integer> pathToBitRate;
     private HashMap<String, HashMap<Integer, byte[]>> fileChunks;
-    private static int bitSent = 0;
-    private final static int MAX_WINDOW_SIZE = 100;
+    private static Integer bitSent = 0;
+    private final static Integer MAX_WINDOW_SIZE = 100;
     private NodeInfo origin;
     private NodeInfo sender;
-    private int LSPSeqNum;
-    private int TTL;
-    private ArrayList<String> neighborInfoStrings;
+    private Integer LSPSeqNum;
+    private Long LSPTimestamp;
+    private HashSet<NodeInfo> neighbors;
 
-    public UDPServer(int port) {
+    public UDPServer(Integer port) {
         this.port = port;
         this.fileChunks = new HashMap<>();
         this.clientInfos = new HashMap<>();
@@ -55,42 +55,26 @@ public class UDPServer extends Thread {
             }
         }
 
-        this.origin = NodeInfo.parseNeighbor(configMap.get("originName"), configMap.get("originInfo"));
-        this.sender = NodeInfo.parseNeighbor(configMap.get("senderName"), configMap.get("senderInfo"));
+        this.origin = NodeInfo.parseLSPFormat(configMap.get("origin"));
+        this.sender = NodeInfo.parseLSPFormat(configMap.get("sender"));
         // System.out.println("origin name: " + this.origin.getName());
         // System.out.println("sender name: " + this.sender.getName());
 
-        this.TTL = Integer.parseInt(configMap.get("TTL"));
+        this.LSPTimestamp = Long.parseLong(configMap.get("timestamp"));
         this.LSPSeqNum = Integer.parseInt(configMap.get("LSPSeqNum"));
         Pattern pattern = Pattern.compile("peer_[0-9]*");
-        this.neighborInfoStrings = new ArrayList<>();
+        this.neighbors = new HashSet<>();
         for (Map.Entry<String, String> entry : configMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
             if (pattern.matcher(key).matches()) {
-                this.neighborInfoStrings.add(value);
+                this.neighbors.add(NodeInfo.parseLSPFormat(value));
             }
             // this.neighborInfoParams.add(configMap.get("senderName"));
         }
         // System.out.println("configMap: " + configMap);
     }
 
-    private String LSPToString() {
-        NodeInfo curr = VodServer.getHomeNodeInfo();
-        String message = "LSPSeqNum=" + this.LSPSeqNum + " "
-                + "TTL=" + this.TTL + " "
-                + "senderName=" + curr.getName() + " "
-                + "senderInfo=" + curr.toNeighborFormat() + " "
-                + "originName=" + this.origin.getName() + " "
-                + "originInfo=" + this.origin.toNeighborFormat() + " ";
-        for (int i = 0; i < this.neighborInfoStrings.size(); i++) {
-            message += this.neighborInfoStrings.get(i);
-        }
-        return message;
-    }
-
-    // TODO: build an adjacency list when getting LSP
-    // deal with TTL
     @Override
     public void run() {
         try (DatagramSocket socket = new DatagramSocket(this.port)) {
@@ -111,6 +95,7 @@ public class UDPServer extends Thread {
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
+        System.out.println(requestString);
         if (seqNum == -1 && !requestString.isEmpty()) {
             // the packet is LSP
 
@@ -121,10 +106,10 @@ public class UDPServer extends Thread {
                     // reply Yes
                     byte[] data = new byte[bufferSize];
                     VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-                    NodeInfo neighborInfo = NodeInfo.parseNeighbor(values[2], values[3]);
+                    NodeInfo neighborInfo = NodeInfo.parseLSPFormat(values[2]);
                     NodeInfo nodeConfig = VodServer.getHomeNodeInfo();
                     nodeConfig.setMetric(neighborInfo.getMetric());
-                    String message = "HELLO YES " + nodeConfig.getName() + " " + nodeConfig.toNeighborFormat();
+                    String message = "HELLO YES " + nodeConfig.toLSPFormat();
                     byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
                     System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
                     DatagramPacket outPkt = new DatagramPacket(data, data.length, neighborInfo.getHost(),
@@ -135,7 +120,7 @@ public class UDPServer extends Thread {
                 }
                 if (values[1].equals("YES")) {
                     // store in activeNeighbor list
-                    NodeInfo neighborInfo = NodeInfo.parseNeighbor(values[2], values[3]);
+                    NodeInfo neighborInfo = NodeInfo.parseLSPFormat(values[2]);
                     VodServer.activeNeighbors.add(neighborInfo);
                     return;
                 }
@@ -155,7 +140,7 @@ public class UDPServer extends Thread {
             VodServer.LSDB.put(this.origin.getUUID(), this.LSPSeqNum);
 
             if (!VodServer.adjMap.containsKey(this.origin.getUUID())) {
-                VodServer.adjMap.put(this.origin.getUUID(), new ArrayList<>());
+                VodServer.adjMap.put(this.origin.getUUID(), new HashMap<>());
             }
 
             // TODO: Find a way to update the end name
@@ -167,28 +152,20 @@ public class UDPServer extends Thread {
             // metric1, originNode2: {neighborNodeName2 : metric2, neighborNodeName1 :
             // metric2}
 
-            NodeInfo start = new NodeInfo();
-            start.setName(this.origin.getName());
-            start.setUUID(this.origin.getUUID());
-            for (String neighborInfoString : this.neighborInfoStrings) {
-                // parse the end (neighbor) node
-                NodeInfo end = NodeInfo.parseNeighbor("", neighborInfoString);
-                HashMap<String, String> uuidToName = VodServer.getUUIDToName();
-                // System.out.println("curr uuidToName: " + uuidToName);
-                // System.out.println("end uuid: " + end.getUUID());
-                // System.out.println("end name: " + uuidToName.get(end.getUUID()));
-                if (uuidToName.containsKey(end.getUUID())) {
-                    end.setName(uuidToName.get(end.getUUID()));
-                } else {
-                    end.setName(end.getUUID());
-                }
-
-                start.setMetric(end.getMetric());
-                VodServer.adjMap.get(start.getUUID()).add(end);
+            Long currentTime = System.currentTimeMillis();
+            for (NodeInfo neighbor : this.neighbors) {
+                NodeInfo end = neighbor;
+                end.setTimestamp(currentTime);
                 if (!VodServer.adjMap.containsKey(end.getUUID())) {
-                    VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
+                    VodServer.adjMap.put(end.getUUID(), new HashMap<>());
                 }
-                VodServer.adjMap.get(end.getUUID()).add(start);
+                NodeInfo start = new NodeInfo();
+                start.setTimestamp(currentTime);
+                start.setName(this.origin.getName());
+                start.setUUID(this.origin.getUUID());
+                start.setMetric(end.getMetric());
+                VodServer.adjMap.get(start.getUUID()).put(end.getUUID(), end);
+                VodServer.adjMap.get(end.getUUID()).put(start.getUUID(), start);
             }
 
             // dijkstra
@@ -205,12 +182,18 @@ public class UDPServer extends Thread {
                     distance.put(curr.getUUID(), Double.MAX_VALUE);
                 }
                 // iterate through its neighbors
-                for (NodeInfo neighbor : VodServer.adjMap.get(curr.getUUID())) {
-                    Double newDistance = distance.get(curr.getUUID()) + neighbor.getMetric();
-                    if (!distance.containsKey(neighbor.getUUID())
-                            || Double.compare(newDistance, distance.get(neighbor.getUUID())) == -1) {
-                        distance.put(neighbor.getUUID(), newDistance);
-                        minHeap.offer(neighbor);
+                HashMap<String, NodeInfo> neighbors = VodServer.adjMap.get(curr.getUUID());
+                for (String neighborUUID : neighbors.keySet()) {
+                    NodeInfo neighborInfo = neighbors.get(neighborUUID);
+                    // check TTL
+                    if (currentTime - neighborInfo.getTimestamp() >= VodServer.TIME_TO_LIVE * 1000) {
+                        continue;
+                    }
+                    Double newDistance = distance.get(curr.getUUID()) + neighborInfo.getMetric();
+                    if (!distance.containsKey(neighborUUID)
+                            || Double.compare(newDistance, distance.get(neighborUUID)) == -1) {
+                        distance.put(neighborUUID, newDistance);
+                        minHeap.offer(neighborInfo);
                     }
                 }
 
@@ -228,7 +211,9 @@ public class UDPServer extends Thread {
                 if (!neighborInfo.getUUID().equals(sender.getUUID())) {
                     byte[] data = new byte[bufferSize];
                     VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
-                    String message = this.LSPToString(); // create new LSP message
+                    String message = LSPSender.LSPMessageConstructor(this.LSPSeqNum, this.LSPTimestamp, this.sender,
+                            this.origin,
+                            neighbors);
                     byte[] messageBytes = message.getBytes(Charset.forName("US-ASCII"));
                     System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
                     DatagramPacket outPkt = new DatagramPacket(data, data.length,
