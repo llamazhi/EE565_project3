@@ -194,7 +194,7 @@ public class UDPServer extends Thread {
             // dijkstra
             PriorityQueue<NodeInfo> minHeap = new PriorityQueue<>(
                     (a, b) -> Double.compare(a.getMetric(), b.getMetric()));
-            HashMap<String, Double> distance = new HashMap<>();
+            HashMap<String, Double> distance = VodServer.distanceFromOrigin;
             distance.put(VodServer.getHomeNodeInfo().getUUID(), 0.0);
             minHeap.offer(VodServer.getHomeNodeInfo());
             while (!minHeap.isEmpty()) {

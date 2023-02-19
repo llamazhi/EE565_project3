@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.Collections;
 import com.google.gson.JsonObject;
@@ -254,7 +255,6 @@ public class ThreadedHTTPWorker extends Thread {
                     String neighborName = edge.getName();
                     double metric = edge.getMetric();
                     nodeObj.addProperty(neighborName, metric);
-                    nodeObj.addProperty(neighborName, metric);
                 }
                 // System.out.println("neighbors info: " + edgesInfo);
                 homeNodeObj.add(homeNodeName, nodeObj);
@@ -281,18 +281,45 @@ public class ThreadedHTTPWorker extends Thread {
     private void showContentRank(String filePath) {
         try {
             HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            // use a hashset to record all the nodes with specified content
+            HashSet<NodeInfo> nodesWithContent = new HashSet<NodeInfo>();
+            String currUUID = VodServer.getHomeNodeInfo().getUUID();
+
+            // check the neighbor nodes of the curr node
             for (String uuid : adjMap.keySet()) {
-
+                if (!uuid.equals(currUUID)) {
+                    ArrayList<NodeInfo> nodes = adjMap.get(uuid);
+                    for (NodeInfo node : nodes) {
+                        System.out.println("nodes: " + node);
+                        if (node.getContentDir().equals(filePath)) {
+                            nodesWithContent.add(node);
+                        }
+                    }
+                }
             }
+            System.out.println("nodesWithContent: " + nodesWithContent);
 
-            System.out.println("adjMap: " + adjMap);
+            // create the jsonArray and start sorting the json objects by distance
+            ArrayList<Double> distances = new ArrayList<Double>();
+            HashMap<Double, String> distanceToName = new HashMap<>();
             JsonArray jsonArray = new JsonArray();
-            for (String name : adjMap.keySet()) {
-                JsonObject node = new JsonObject();
-                node.addProperty(name, adjMap.get(name).toString());
-
-                jsonArray.add(node);
+            for (NodeInfo node : nodesWithContent) {
+                String uuid = node.getUUID();
+                String name = node.getName();
+                double metric = VodServer.distanceFromOrigin.get(uuid);
+                distances.add(metric);
+                distanceToName.put(metric, name);
             }
+            Collections.sort(distances);
+
+            // add to the jsonArray according to the order of distance
+            for (Double distance : distances) {
+                JsonObject nodeInfo = new JsonObject();
+                String name = distanceToName.get(distance);
+                nodeInfo.addProperty(name, distance);
+                jsonArray.add(nodeInfo);
+            }
+
             String jsonStr = jsonArray.toString();
             String response = "HTTP/1.1 200 OK" + this.CRLF +
                     "Date: " + getGMTDate(new Date()) + this.CRLF +

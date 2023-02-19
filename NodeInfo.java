@@ -23,6 +23,7 @@ public class NodeInfo {
     private String contentDir;
     private int peerCount;
     private double metric;
+    private ArrayList<String> contents = new ArrayList<String>();
 
     private ArrayList<NodeInfo> neighbors = new ArrayList<NodeInfo>();
 

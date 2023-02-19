@@ -18,6 +18,7 @@ public class VodServer {
     public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
     public static HashSet<NodeInfo> activeNeighbors;
     public static HashMap<String, Boolean> prevActiveNeighbors;
+    public static HashMap<String, Double> distanceFromOrigin = new HashMap<>();
     public static Integer LSPSeqNum = 1;
 
     public VodServer() {

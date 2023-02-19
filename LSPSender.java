@@ -49,7 +49,7 @@ public class LSPSender extends Thread {
                 byte[] data = new byte[bufferSize];
                 VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
                 NodeInfo curr = VodServer.getHomeNodeInfo();
-                System.out.println("curr node: " + curr.getName());
+                // System.out.println("curr node: " + curr.getName());
                 // System.out.println("curr LSPseqNum: " + VodServer.LSPSeqNum);
                 String message = "LSPSeqNum=" + VodServer.LSPSeqNum + " "
                         + "TTL=" + LSPSender.TTL + " "
