@@ -136,7 +136,9 @@ public class ThreadedHTTPWorker extends Thread {
         } else if (parser.hasMap()) {
             showNeighborMap();
         } else if (parser.hasRank()) {
-            showContentRank(parser.getPath());
+            String path = parser.getPath();
+            path = path.replace("/peer/rank/", "");
+            showContentRank(path);
         } else {
             sendErrorResponse("Invalid request");
         }
@@ -242,14 +244,14 @@ public class ThreadedHTTPWorker extends Thread {
         try {
             HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             // System.out.println("adj map: " + adjMap);
-            HashMap<String, String> uuidToName = VodServer.getUUIDToName();
+            // HashMap<String, String> uuidToName = VodServer.getUUIDToName();
             JsonObject homeNodeObj = new JsonObject();
             for (String uuid : adjMap.keySet()) {
                 String homeNodeName = "";
-                if (!uuidToName.containsKey(uuid)) {
+                if (!VodServer.uuidToInfo.containsKey(uuid)) {
                     homeNodeName = uuid;
                 } else {
-                    homeNodeName = uuidToName.get(uuid);
+                    homeNodeName = VodServer.uuidToInfo.get(uuid).getName();
                 }
 
                 HashMap<String, NodeInfo> neighbors = adjMap.get(uuid);
@@ -286,40 +288,24 @@ public class ThreadedHTTPWorker extends Thread {
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
     private void showContentRank(String filePath) {
         try {
-            HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             // use a hashset to record all the nodes with specified content
-            HashSet<NodeInfo> nodesWithContent = new HashSet<>();
-            String currUUID = VodServer.getHomeNodeInfo().getUUID();
+            TreeMap<Double, NodeInfo> nodesWithContent = new TreeMap<>();
 
             // check the neighbor nodes of the curr node
-            for (String uuid : adjMap.keySet()) {
-                if (!uuid.equals(currUUID)) {
-                    HashMap<String, NodeInfo> nodes = adjMap.get(uuid);
-                    for (String nodeUUID : nodes.keySet()) {
-                        NodeInfo node = nodes.get(nodeUUID);
-                        System.out.println("nodes: " + nodeUUID);
-                        if (node.getContentDir().equals(filePath)) {
-                            nodesWithContent.add(node);
-                        }
-                    }
+            for (String uuid : VodServer.distanceFromOrigin.keySet()) {
+                NodeInfo node = VodServer.uuidToInfo.get(uuid);
+                if (node.getContentDir().equals(filePath)) { // TODO: modify to certain filepath
+                    System.out.println(node.getName() + " " + node.getMetric());
+                    nodesWithContent.put(node.getMetric(), node);
                 }
             }
             System.out.println("nodesWithContent: " + nodesWithContent);
-
-            // create the jsonArray and start sorting the json objects by distance
-            TreeMap<Double, String> sortedDistances = new TreeMap<>();
             JsonArray jsonArray = new JsonArray();
-            for (NodeInfo node : nodesWithContent) {
-                String uuid = node.getUUID();
-                String name = node.getName();
-                Double metric = VodServer.distanceFromOrigin.get(uuid);
-                sortedDistances.put(metric, name);
-            }
 
             // add to the jsonArray according to the order of distance
-            for (Map.Entry<Double, String> entry : sortedDistances.entrySet()) {
+            for (Map.Entry<Double, NodeInfo> entry : nodesWithContent.entrySet()) {
                 Double distance = entry.getKey();
-                String name = entry.getValue();
+                String name = entry.getValue().getName();
                 JsonObject nodeInfo = new JsonObject();
                 nodeInfo.addProperty(name, distance);
                 jsonArray.add(nodeInfo);

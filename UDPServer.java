@@ -1,7 +1,4 @@
 import java.util.regex.Pattern;
-
-import org.w3c.dom.Node;
-
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
@@ -129,10 +126,10 @@ public class UDPServer extends Thread {
                 }
             }
             this.parseLSP(requestString);
-            VodServer.setUUIDToName(this.sender.getUUID(), this.sender.getName());
-            VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
-            // VodServer.uuidToInfo.put(this.origin.getUUID(), this.origin);
-            // VodServer.uuidToInfo.put(this.sender.getUUID(), this.sender);
+            // VodServer.setUUIDToName(this.sender.getUUID(), this.sender.getName());
+            // VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
+            VodServer.uuidToInfo.put(this.origin.getUUID(), this.origin);
+            VodServer.uuidToInfo.put(this.sender.getUUID(), this.sender);
 
             if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
                 if (this.LSPTimestamp <= VodServer.LSDB.get(this.origin.getUUID())) {
@@ -159,6 +156,7 @@ public class UDPServer extends Thread {
             Long currentTime = System.currentTimeMillis();
             for (Map.Entry<String, NodeInfo> entry : neighbors.entrySet()) {
                 NodeInfo end = entry.getValue();
+                VodServer.uuidToInfo.put(end.getUUID(), end);
                 end.setTimestamp(currentTime);
                 if (!VodServer.adjMap.containsKey(end.getUUID())) {
                     VodServer.adjMap.put(end.getUUID(), new HashMap<>());

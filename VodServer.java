@@ -3,8 +3,6 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
 
 // This is the main driver class for the project
 public class VodServer {
@@ -16,7 +14,7 @@ public class VodServer {
     private static Integer bitRate = 0;
     private static NodeInfo homeNodeInfo;
     public static HashMap<String, HashMap<String, NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
-    public static HashMap<String, String> uuidToName;
+    // public static HashMap<String, String> uuidToName;
     public static HashMap<String, Long> LSDB; // Link State Database (origin uuid, timestamp)
     public static HashMap<String, NodeInfo> activeNeighbors = new HashMap<>();
     public static HashMap<String, Boolean> prevActiveNeighbors;
@@ -29,7 +27,7 @@ public class VodServer {
         VodServer.parameterMap = new HashMap<String, ArrayList<NodeInfo>>();
         VodServer.clientReceiveTimestamps = new ArrayList<>();
         VodServer.adjMap = new HashMap<>();
-        VodServer.uuidToName = new HashMap<>();
+        // VodServer.uuidToName = new HashMap<>();
         VodServer.LSDB = new HashMap<>();
         VodServer.activeNeighbors = new HashMap<>();
         VodServer.prevActiveNeighbors = new HashMap<>();
@@ -86,13 +84,13 @@ public class VodServer {
         return VodServer.adjMap;
     }
 
-    public static HashMap<String, String> getUUIDToName() {
-        return uuidToName;
-    }
+    // public static HashMap<String, String> getUUIDToName() {
+    // return uuidToName;
+    // }
 
-    public static void setUUIDToName(String uuid, String name) {
-        VodServer.uuidToName.put(uuid, name);
-    }
+    // public static void setUUIDToName(String uuid, String name) {
+    // VodServer.uuidToName.put(uuid, name);
+    // }
 
     public void setServerInfo(NodeInfo config) {
         VodServer.homeNodeInfo = config;
