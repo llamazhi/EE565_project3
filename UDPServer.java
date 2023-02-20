@@ -1,4 +1,7 @@
 import java.util.regex.Pattern;
+
+import org.w3c.dom.Node;
+
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
@@ -21,7 +24,7 @@ public class UDPServer extends Thread {
     private NodeInfo sender;
     private Integer LSPSeqNum;
     private Long LSPTimestamp;
-    private HashSet<NodeInfo> neighbors;
+    private HashMap<String, NodeInfo> neighbors;
 
     public UDPServer(Integer port) {
         this.port = port;
@@ -63,12 +66,13 @@ public class UDPServer extends Thread {
         this.LSPTimestamp = Long.parseLong(configMap.get("timestamp"));
         this.LSPSeqNum = Integer.parseInt(configMap.get("LSPSeqNum"));
         Pattern pattern = Pattern.compile("peer_[0-9]*");
-        this.neighbors = new HashSet<>();
+        this.neighbors = new HashMap<>();
         for (Map.Entry<String, String> entry : configMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
             if (pattern.matcher(key).matches()) {
-                this.neighbors.add(NodeInfo.parseLSPFormat(value));
+                NodeInfo neighbor = NodeInfo.parseLSPFormat(value);
+                this.neighbors.put(neighbor.getUUID(), neighbor);
             }
             // this.neighborInfoParams.add(configMap.get("senderName"));
         }
@@ -95,7 +99,6 @@ public class UDPServer extends Thread {
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
-        // System.out.println(requestString);
         if (seqNum == -1 && !requestString.isEmpty()) {
             // the packet is LSP
 
@@ -121,14 +124,15 @@ public class UDPServer extends Thread {
                 if (values[1].equals("YES")) {
                     // store in activeNeighbor list
                     NodeInfo neighborInfo = NodeInfo.parseLSPFormat(values[2]);
-                    VodServer.activeNeighbors.add(neighborInfo);
+                    VodServer.activeNeighbors.put(neighborInfo.getUUID(), neighborInfo);
                     return;
                 }
             }
-
             this.parseLSP(requestString);
             VodServer.setUUIDToName(this.sender.getUUID(), this.sender.getName());
             VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
+            // VodServer.uuidToInfo.put(this.origin.getUUID(), this.origin);
+            // VodServer.uuidToInfo.put(this.sender.getUUID(), this.sender);
 
             if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
                 if (this.LSPTimestamp <= VodServer.LSDB.get(this.origin.getUUID())) {
@@ -153,8 +157,8 @@ public class UDPServer extends Thread {
             // metric2}
 
             Long currentTime = System.currentTimeMillis();
-            for (NodeInfo neighbor : this.neighbors) {
-                NodeInfo end = neighbor;
+            for (Map.Entry<String, NodeInfo> entry : neighbors.entrySet()) {
+                NodeInfo end = entry.getValue();
                 end.setTimestamp(currentTime);
                 if (!VodServer.adjMap.containsKey(end.getUUID())) {
                     VodServer.adjMap.put(end.getUUID(), new HashMap<>());

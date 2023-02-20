@@ -3,6 +3,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 
 // This is the main driver class for the project
 public class VodServer {
@@ -16,9 +18,10 @@ public class VodServer {
     public static HashMap<String, HashMap<String, NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
     public static HashMap<String, String> uuidToName;
     public static HashMap<String, Long> LSDB; // Link State Database (origin uuid, timestamp)
-    public static HashSet<NodeInfo> activeNeighbors = new HashSet<NodeInfo>();
+    public static HashMap<String, NodeInfo> activeNeighbors = new HashMap<>();
     public static HashMap<String, Boolean> prevActiveNeighbors;
     public static HashMap<String, Double> distanceFromOrigin = new HashMap<>();
+    public static HashMap<String, NodeInfo> uuidToInfo = new HashMap<>();
     public static Integer LSPSeqNum = 1;
     public final static Integer TIME_TO_LIVE = 10;
 
@@ -28,7 +31,7 @@ public class VodServer {
         VodServer.adjMap = new HashMap<>();
         VodServer.uuidToName = new HashMap<>();
         VodServer.LSDB = new HashMap<>();
-        VodServer.activeNeighbors = new HashSet<NodeInfo>();
+        VodServer.activeNeighbors = new HashMap<>();
         VodServer.prevActiveNeighbors = new HashMap<>();
     }
 

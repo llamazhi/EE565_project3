@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.lang.Comparable;
 
 public class NodeInfo implements Comparable<NodeInfo> {
     private InetAddress host;

@@ -7,14 +7,16 @@ public class LSPSender extends Thread {
     private Integer prevLSPSeqNum;
 
     public static String LSPMessageConstructor(Integer LSPSeqNum, Long LSPTimestamp, NodeInfo sender, NodeInfo origin,
-            HashSet<NodeInfo> neighbors) {
+            HashMap<String, NodeInfo> neighbors) {
         String message = "LSPSeqNum=" + LSPSeqNum + " "
                 + "timestamp=" + LSPTimestamp + " "
                 + "sender=" + sender.toLSPFormat() + " "
                 + "origin=" + origin.toLSPFormat() + " ";
         Integer i = 0;
-        for (NodeInfo neighbor : neighbors) {
+        for (Map.Entry<String, NodeInfo> entry : neighbors.entrySet()) {
+            NodeInfo neighbor = entry.getValue();
             message += "peer_" + i + "=" + neighbor.toLSPFormat() + " ";
+            i++;
         }
         return message;
     }
@@ -23,11 +25,12 @@ public class LSPSender extends Thread {
     public static void hello() {
         // store the old neighbors
         VodServer.prevActiveNeighbors.clear();
-        for (NodeInfo neighbor : VodServer.activeNeighbors) {
-            VodServer.prevActiveNeighbors.put(neighbor.getUUID(), false);
+        for (Map.Entry<String, NodeInfo> entry : VodServer.activeNeighbors.entrySet()) {
+            String uuid = entry.getKey();
+            VodServer.prevActiveNeighbors.put(uuid, false);
         }
         // clear old active neighbors
-        VodServer.activeNeighbors.clear();
+        // VodServer.activeNeighbors.clear();
 
         // say hello to all neighbors
         try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -74,18 +77,21 @@ public class LSPSender extends Thread {
                 byte[] data = new byte[bufferSize];
                 VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
                 NodeInfo curr = VodServer.getHomeNodeInfo();
-                HashSet<NodeInfo> neighbors = VodServer.activeNeighbors;
-                System.out.println("curr node: " + curr.getName());
+                HashMap<String, NodeInfo> neighbors = VodServer.activeNeighbors;
+                // System.out.println("curr node: " + curr.getName());
+                // System.out.println("active neighbors: " + neighbors);
                 Long currentTime = System.currentTimeMillis();
                 String message = LSPSender.LSPMessageConstructor(VodServer.LSPSeqNum, currentTime, curr, curr,
                         neighbors);
                 byte[] messageBytes = message.getBytes();
                 System.arraycopy(messageBytes, 0, data, 4, messageBytes.length);
-                for (NodeInfo neighbor : neighbors) {
+                for (Map.Entry<String, NodeInfo> entry : neighbors.entrySet()) {
+                    NodeInfo neighbor = entry.getValue();
                     DatagramPacket outPkt = new DatagramPacket(data, data.length, neighbor.getHost(),
                             neighbor.getBackendPort());
                     socket.send(outPkt);
                 }
+                VodServer.activeNeighbors.clear();
             } catch (IOException ex) {
                 System.out.println("SocketCannotOpenError");
             }

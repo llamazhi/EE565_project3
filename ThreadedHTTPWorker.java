@@ -214,7 +214,8 @@ public class ThreadedHTTPWorker extends Thread {
         checkNeighborsActive();
         try {
             JsonArray jsonArray = new JsonArray();
-            for (NodeInfo neighborInfo : VodServer.activeNeighbors) {
+            for (Map.Entry<String, NodeInfo> entry : VodServer.activeNeighbors.entrySet()) {
+                NodeInfo neighborInfo = entry.getValue();
                 JsonObject node = new JsonObject();
                 node.addProperty("uuid", neighborInfo.getUUID());
                 node.addProperty("name", neighborInfo.getName());
