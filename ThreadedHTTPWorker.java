@@ -194,14 +194,6 @@ public class ThreadedHTTPWorker extends Thread {
 
     private void checkNeighborsActive() {
         LSPSender.hello();
-        try {
-            long sleepTime = 1000;
-            System.out.println("wait for neighbors' hello response for " + sleepTime + "ms");
-            Thread.sleep((sleepTime));
-        } catch (InterruptedException e) {
-            System.out.println("Fail to sleep");
-        }
-
         Boolean neighborDead = false;
         for (Map.Entry<String, Integer> entry : VodServer.neighborNoResponseCount.entrySet()) {
             String uuid = entry.getKey();
@@ -213,8 +205,9 @@ public class ThreadedHTTPWorker extends Thread {
             }
         }
         if (neighborDead) {
-            System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
             VodServer.LSPSeqNum++;
+            System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
+            System.out.println("LSPSeqNum = " + VodServer.LSPSeqNum);
         }
     }
 

@@ -31,8 +31,8 @@ public class LSPSender extends Thread {
             NodeInfo curr = VodServer.getHomeNodeInfo();
             HashSet<NodeInfo> neighbors = curr.getNeighbors();
             for (NodeInfo neighbor : neighbors) {
-                // TODO: no response count++ when send hello
-                // TODO: count -> 0 when receive response
+                // neighbor no response count++ when send hello
+                // (count reset to 0 when receive hello)
                 // If neighbor already exists in map, increment its count
                 if (VodServer.neighborNoResponseCount.containsKey(neighbor.getUUID())) {
                     int frequency = VodServer.neighborNoResponseCount.get(neighbor.getUUID());
@@ -83,8 +83,9 @@ public class LSPSender extends Thread {
                 }
             }
             if (neighborDead) {
-                System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
                 VodServer.LSPSeqNum++;
+                System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
+                System.out.println("LSPSeqNum = " + VodServer.LSPSeqNum);
             }
             // if the LSPSeqNum doesn't change, which mean neighbors status are the same,
             // wait 5000 ms before sending the next LSP
