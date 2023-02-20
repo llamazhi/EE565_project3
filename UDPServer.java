@@ -174,7 +174,8 @@ public class UDPServer extends Thread {
             // dijkstra
             PriorityQueue<NodeInfo> minHeap = new PriorityQueue<>(
                     (a, b) -> Double.compare(a.getMetric(), b.getMetric()));
-            HashMap<String, Double> distance = VodServer.distanceFromOrigin;
+
+            HashMap<String, Double> distance = new HashMap<>();
             distance.put(VodServer.getHomeNodeInfo().getUUID(), 0.0);
             minHeap.offer(VodServer.getHomeNodeInfo());
             while (!minHeap.isEmpty()) {
@@ -190,6 +191,7 @@ public class UDPServer extends Thread {
                     NodeInfo neighborInfo = neighbors.get(neighborUUID);
                     // check TTL
                     if (currentTime - neighborInfo.getTimestamp() >= VodServer.TIME_TO_LIVE * 1000) {
+                        // information outdated
                         continue;
                     }
                     Double newDistance = distance.get(curr.getUUID()) + neighborInfo.getMetric();
@@ -199,8 +201,8 @@ public class UDPServer extends Thread {
                         minHeap.offer(neighborInfo);
                     }
                 }
-
             }
+            VodServer.distanceFromOrigin = distance;
 
             // System.out.println("Dijkstra");
             // for (Map.Entry<String, Double> entry : distance.entrySet()) {

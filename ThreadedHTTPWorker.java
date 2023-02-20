@@ -296,14 +296,16 @@ public class ThreadedHTTPWorker extends Thread {
                 NodeInfo node = VodServer.uuidToInfo.get(uuid);
                 if (node.getContentDir().equals(filePath)) { // TODO: modify to certain filepath
                     System.out.println(node.getName() + " " + node.getMetric());
-                    nodesWithContent.put(node.getMetric(), node);
+                    nodesWithContent.put(VodServer.distanceFromOrigin.get(uuid), node);
                 }
             }
-            System.out.println("nodesWithContent: " + nodesWithContent);
+            // System.out.println("nodesWithContent: " + nodesWithContent);
             JsonArray jsonArray = new JsonArray();
-
             // add to the jsonArray according to the order of distance
             for (Map.Entry<Double, NodeInfo> entry : nodesWithContent.entrySet()) {
+                if (entry.getValue().getUUID().equals(VodServer.getHomeNodeInfo().getUUID())) {
+                    continue;
+                }
                 Double distance = entry.getKey();
                 String name = entry.getValue().getName();
                 JsonObject nodeInfo = new JsonObject();
