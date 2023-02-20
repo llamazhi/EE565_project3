@@ -6,32 +6,22 @@ import java.util.HashSet;
 
 // This is the main driver class for the project
 public class VodServer {
-    public static HashMap<String, ArrayList<NodeInfo>> parameterMap;
-    public static ArrayList<Long> clientReceiveTimestamps;
+    public static HashMap<String, ArrayList<NodeInfo>> parameterMap = new HashMap<>();
+    public static ArrayList<Long> clientReceiveTimestamps = new ArrayList<>();
     public static boolean bitRateChanged = false;
     public final static Integer bufferSize = 8192;
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
     private static NodeInfo homeNodeInfo;
-    public static HashMap<String, HashMap<String, NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
-    // public static HashMap<String, String> uuidToName;
-    public static HashMap<String, Long> LSDB; // Link State Database (origin uuid, timestamp)
+    public static HashMap<String, HashMap<String, NodeInfo>> adjMap = new HashMap<>();
+    public static HashMap<String, Long> LSDB = new HashMap<>(); // Link State Database (origin uuid, timestamp)
     public static HashMap<String, NodeInfo> activeNeighbors = new HashMap<>();
-    public static HashMap<String, Boolean> prevActiveNeighbors;
+    public static HashMap<String, Boolean> prevActiveNeighbors = new HashMap<>();
+    public static HashMap<String, Integer> neighborNoResponseCount = new HashMap<>();
     public static HashMap<String, Double> distanceFromOrigin = new HashMap<>();
     public static HashMap<String, NodeInfo> uuidToInfo = new HashMap<>();
     public static Integer LSPSeqNum = 1;
     public final static Integer TIME_TO_LIVE = 10;
-
-    public VodServer() {
-        VodServer.parameterMap = new HashMap<String, ArrayList<NodeInfo>>();
-        VodServer.clientReceiveTimestamps = new ArrayList<>();
-        VodServer.adjMap = new HashMap<>();
-        // VodServer.uuidToName = new HashMap<>();
-        VodServer.LSDB = new HashMap<>();
-        VodServer.activeNeighbors = new HashMap<>();
-        VodServer.prevActiveNeighbors = new HashMap<>();
-    }
 
     public static void addPeer(String filepath, NodeInfo info) {
         if (!VodServer.parameterMap.containsKey(filepath)) {
@@ -121,20 +111,6 @@ public class VodServer {
             NodeInfo config = NodeInfo.parseConfigFile(args[1]);
             System.out.println("server uuid: " + config.getUUID());
             vodServer.setServerInfo(config);
-            // VodServer.adjMap.put(config.getUUID(), new ArrayList<>());
-            // VodServer.uuidToName.put(config.getUUID(), config.getName());
-            for (NodeInfo neighborInfo : config.getNeighbors()) {
-                NodeInfo end = neighborInfo;
-                NodeInfo start = new NodeInfo();
-                start.setName(config.getName());
-                start.setUUID(config.getUUID());
-                start.setMetric(end.getMetric());
-                // VodServer.adjMap.get(start.getUUID()).add(end);
-                // if (!VodServer.adjMap.containsKey(end.getUUID())) {
-                // VodServer.adjMap.put(end.getUUID(), new ArrayList<>());
-                // }
-                // VodServer.adjMap.get(end.getUUID()).add(start);
-            }
         } catch (IOException ex) {
             System.out.println("error while reading config file");
             return;
@@ -149,7 +125,6 @@ public class VodServer {
         UDPServer udpserver = new UDPServer(udpPort);
         udpserver.start();
 
-        // TODO: create another thread for continuously sending LSP
         LSPSender lspSender = new LSPSender();
         lspSender.start();
 
@@ -161,7 +136,6 @@ public class VodServer {
         }
 
         try {
-            // TODO: change to a variable, isActive, set to false when getting "peer/kill"
             while (true) {
                 Socket client = server.accept();
                 System.out.println("Connection accepted");

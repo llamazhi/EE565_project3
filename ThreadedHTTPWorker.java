@@ -8,7 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map;
@@ -128,7 +127,6 @@ public class ThreadedHTTPWorker extends Thread {
         } else if (parser.hasUUID()) {
             showUUID();
         } else if (parser.hasNeighbors()) {
-            LSPSender.hello();
             showNeighbors();
         } else if (parser.hasAddNeighbor()) {
             String[] queries = parser.getQueries();
@@ -198,17 +196,25 @@ public class ThreadedHTTPWorker extends Thread {
         LSPSender.hello();
         try {
             long sleepTime = 1000;
-            System.out.println("wait for neighbors' hello response for " + sleepTime + " ms");
+            System.out.println("wait for neighbors' hello response for " + sleepTime + "ms");
             Thread.sleep((sleepTime));
         } catch (InterruptedException e) {
             System.out.println("Fail to sleep");
         }
-        boolean allNeighborsActive = true;
-        for (String key : VodServer.prevActiveNeighbors.keySet()) {
-            allNeighborsActive &= VodServer.prevActiveNeighbors.get(key);
+
+        Boolean neighborDead = false;
+        for (Map.Entry<String, Integer> entry : VodServer.neighborNoResponseCount.entrySet()) {
+            String uuid = entry.getKey();
+            Integer count = entry.getValue();
+            if (count >= 3) {
+                if (VodServer.activeNeighbors.remove(uuid) != null) {
+                    neighborDead = true;
+                }
+            }
         }
-        if (!allNeighborsActive) {
+        if (neighborDead) {
             System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
+            VodServer.LSPSeqNum++;
         }
     }
 
@@ -240,11 +246,9 @@ public class ThreadedHTTPWorker extends Thread {
     }
 
     private void showNeighborMap() {
-        checkNeighborsActive();
+        // checkNeighborsActive();
         try {
             HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
-            // System.out.println("adj map: " + adjMap);
-            // HashMap<String, String> uuidToName = VodServer.getUUIDToName();
             JsonObject homeNodeObj = new JsonObject();
             for (String uuid : adjMap.keySet()) {
                 String homeNodeName = "";
@@ -269,7 +273,6 @@ public class ThreadedHTTPWorker extends Thread {
                     double metric = neighborInfo.getMetric();
                     nodeObj.addProperty(neighborName, metric);
                 }
-                // System.out.println("neighbors info: " + edgesInfo);
                 homeNodeObj.add(homeNodeName, nodeObj);
             }
             String jsonStr = homeNodeObj.toString();
@@ -295,11 +298,9 @@ public class ThreadedHTTPWorker extends Thread {
             for (String uuid : VodServer.distanceFromOrigin.keySet()) {
                 NodeInfo node = VodServer.uuidToInfo.get(uuid);
                 if (node.getContentDir().equals(filePath)) { // TODO: modify to certain filepath
-                    System.out.println(node.getName() + " " + node.getMetric());
                     nodesWithContent.put(VodServer.distanceFromOrigin.get(uuid), node);
                 }
             }
-            // System.out.println("nodesWithContent: " + nodesWithContent);
             JsonArray jsonArray = new JsonArray();
             // add to the jsonArray according to the order of distance
             for (Map.Entry<Double, NodeInfo> entry : nodesWithContent.entrySet()) {

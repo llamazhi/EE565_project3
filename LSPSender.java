@@ -23,15 +23,6 @@ public class LSPSender extends Thread {
 
     // send HELLO to neighbors
     public static void hello() {
-        // store the old neighbors
-        VodServer.prevActiveNeighbors.clear();
-        for (Map.Entry<String, NodeInfo> entry : VodServer.activeNeighbors.entrySet()) {
-            String uuid = entry.getKey();
-            VodServer.prevActiveNeighbors.put(uuid, false);
-        }
-        // clear old active neighbors
-        // VodServer.activeNeighbors.clear();
-
         // say hello to all neighbors
         try (DatagramSocket socket = new DatagramSocket(0)) {
             // send hello link state packet
@@ -40,6 +31,17 @@ public class LSPSender extends Thread {
             NodeInfo curr = VodServer.getHomeNodeInfo();
             HashSet<NodeInfo> neighbors = curr.getNeighbors();
             for (NodeInfo neighbor : neighbors) {
+                // TODO: no response count++ when send hello
+                // TODO: count -> 0 when receive response
+                // If neighbor already exists in map, increment its count
+                if (VodServer.neighborNoResponseCount.containsKey(neighbor.getUUID())) {
+                    int frequency = VodServer.neighborNoResponseCount.get(neighbor.getUUID());
+                    VodServer.neighborNoResponseCount.put(neighbor.getUUID(), frequency + 1);
+                }
+                // Otherwise, add neighbor to map with count of 1
+                else {
+                    VodServer.neighborNoResponseCount.put(neighbor.getUUID(), 1);
+                }
                 curr.setMetric(neighbor.getMetric());
                 String message = "HELLO AreYouAlive? " + curr.toLSPFormat();
                 byte[] messageBytes = message.toString().getBytes();
@@ -70,6 +72,20 @@ public class LSPSender extends Thread {
                     System.out.println("Fail to sleep");
                 }
             }
+            Boolean neighborDead = false;
+            for (Map.Entry<String, Integer> entry : VodServer.neighborNoResponseCount.entrySet()) {
+                String uuid = entry.getKey();
+                Integer count = entry.getValue();
+                if (count >= 3) {
+                    if (VodServer.activeNeighbors.remove(uuid) != null) {
+                        neighborDead = true;
+                    }
+                }
+            }
+            if (neighborDead) {
+                System.out.println("Some neighbors become inactive! Increase LSPSeqNum.");
+                VodServer.LSPSeqNum++;
+            }
             // if the LSPSeqNum doesn't change, which mean neighbors status are the same,
             // wait 5000 ms before sending the next LSP
             try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -91,7 +107,6 @@ public class LSPSender extends Thread {
                             neighbor.getBackendPort());
                     socket.send(outPkt);
                 }
-                VodServer.activeNeighbors.clear();
             } catch (IOException ex) {
                 System.out.println("SocketCannotOpenError");
             }

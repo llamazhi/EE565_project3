@@ -57,8 +57,6 @@ public class UDPServer extends Thread {
 
         this.origin = NodeInfo.parseLSPFormat(configMap.get("origin"));
         this.sender = NodeInfo.parseLSPFormat(configMap.get("sender"));
-        // System.out.println("origin name: " + this.origin.getName());
-        // System.out.println("sender name: " + this.sender.getName());
 
         this.LSPTimestamp = Long.parseLong(configMap.get("timestamp"));
         this.LSPSeqNum = Integer.parseInt(configMap.get("LSPSeqNum"));
@@ -71,9 +69,7 @@ public class UDPServer extends Thread {
                 NodeInfo neighbor = NodeInfo.parseLSPFormat(value);
                 this.neighbors.put(neighbor.getUUID(), neighbor);
             }
-            // this.neighborInfoParams.add(configMap.get("senderName"));
         }
-        // System.out.println("configMap: " + configMap);
     }
 
     @Override
@@ -122,6 +118,7 @@ public class UDPServer extends Thread {
                     // store in activeNeighbor list
                     NodeInfo neighborInfo = NodeInfo.parseLSPFormat(values[2]);
                     VodServer.activeNeighbors.put(neighborInfo.getUUID(), neighborInfo);
+                    VodServer.neighborNoResponseCount.put(neighborInfo.getUUID(), 0); // reset to 0
                     return;
                 }
             }
@@ -143,15 +140,6 @@ public class UDPServer extends Thread {
             if (!VodServer.adjMap.containsKey(this.origin.getUUID())) {
                 VodServer.adjMap.put(this.origin.getUUID(), new HashMap<>());
             }
-
-            // TODO: Find a way to update the end name
-            // add edges to adjMap
-            // each param contains info directly from the node config file
-            // in the form of:
-            // uuid, host, frontend, backend, metric
-            // adjMap: {originNode1: {neighborNodeName1 : metric1, neighborNodeName1 :
-            // metric1, originNode2: {neighborNodeName2 : metric2, neighborNodeName1 :
-            // metric2}
 
             Long currentTime = System.currentTimeMillis();
             for (Map.Entry<String, NodeInfo> entry : neighbors.entrySet()) {
