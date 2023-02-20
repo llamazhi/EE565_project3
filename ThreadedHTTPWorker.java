@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.Map;
 import java.util.Collections;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
@@ -237,7 +239,7 @@ public class ThreadedHTTPWorker extends Thread {
     private void showNeighborMap() {
         checkNeighborsActive();
         try {
-            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             // System.out.println("adj map: " + adjMap);
             HashMap<String, String> uuidToName = VodServer.getUUIDToName();
             JsonObject homeNodeObj = new JsonObject();
@@ -249,11 +251,19 @@ public class ThreadedHTTPWorker extends Thread {
                     homeNodeName = uuidToName.get(uuid);
                 }
 
-                ArrayList<NodeInfo> edgesInfo = adjMap.get(uuid);
+                HashMap<String, NodeInfo> neighbors = adjMap.get(uuid);
                 JsonObject nodeObj = new JsonObject();
-                for (NodeInfo edge : edgesInfo) {
-                    String neighborName = edge.getName();
-                    double metric = edge.getMetric();
+                Long currentTime = System.currentTimeMillis();
+                for (String neighborUUID : neighbors.keySet()) {
+                    NodeInfo neighborInfo = neighbors.get(neighborUUID);
+                    // check TTL
+                    if (currentTime - neighborInfo.getTimestamp() >= 1000 * 10) {
+                        // information outdated
+                        continue;
+                    }
+
+                    String neighborName = neighborInfo.getName();
+                    double metric = neighborInfo.getMetric();
                     nodeObj.addProperty(neighborName, metric);
                 }
                 // System.out.println("neighbors info: " + edgesInfo);
@@ -271,26 +281,22 @@ public class ThreadedHTTPWorker extends Thread {
         }
     }
 
-    // TODO:
-    // /peer/rank/<content path>
-    // respond an ordered list (sorted by distance metrics) showing the distance
-    // between the requested node and all content nodes.
-
     // For example,
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
     private void showContentRank(String filePath) {
         try {
-            HashMap<String, ArrayList<NodeInfo>> adjMap = VodServer.getAdjMap();
+            HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             // use a hashset to record all the nodes with specified content
-            HashSet<NodeInfo> nodesWithContent = new HashSet<NodeInfo>();
+            HashSet<NodeInfo> nodesWithContent = new HashSet<>();
             String currUUID = VodServer.getHomeNodeInfo().getUUID();
 
             // check the neighbor nodes of the curr node
             for (String uuid : adjMap.keySet()) {
                 if (!uuid.equals(currUUID)) {
-                    ArrayList<NodeInfo> nodes = adjMap.get(uuid);
-                    for (NodeInfo node : nodes) {
-                        System.out.println("nodes: " + node);
+                    HashMap<String, NodeInfo> nodes = adjMap.get(uuid);
+                    for (String nodeUUID : nodes.keySet()) {
+                        NodeInfo node = nodes.get(nodeUUID);
+                        System.out.println("nodes: " + nodeUUID);
                         if (node.getContentDir().equals(filePath)) {
                             nodesWithContent.add(node);
                         }
@@ -300,22 +306,20 @@ public class ThreadedHTTPWorker extends Thread {
             System.out.println("nodesWithContent: " + nodesWithContent);
 
             // create the jsonArray and start sorting the json objects by distance
-            ArrayList<Double> distances = new ArrayList<Double>();
-            HashMap<Double, String> distanceToName = new HashMap<>();
+            TreeMap<Double, String> sortedDistances = new TreeMap<>();
             JsonArray jsonArray = new JsonArray();
             for (NodeInfo node : nodesWithContent) {
                 String uuid = node.getUUID();
                 String name = node.getName();
-                double metric = VodServer.distanceFromOrigin.get(uuid);
-                distances.add(metric);
-                distanceToName.put(metric, name);
+                Double metric = VodServer.distanceFromOrigin.get(uuid);
+                sortedDistances.put(metric, name);
             }
-            Collections.sort(distances);
 
             // add to the jsonArray according to the order of distance
-            for (Double distance : distances) {
+            for (Map.Entry<Double, String> entry : sortedDistances.entrySet()) {
+                Double distance = entry.getKey();
+                String name = entry.getValue();
                 JsonObject nodeInfo = new JsonObject();
-                String name = distanceToName.get(distance);
                 nodeInfo.addProperty(name, distance);
                 jsonArray.add(nodeInfo);
             }

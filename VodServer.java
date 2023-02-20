@@ -13,13 +13,14 @@ public class VodServer {
     private static Double completeness = 0.0;
     private static Integer bitRate = 0;
     private static NodeInfo homeNodeInfo;
-    public static HashMap<String, ArrayList<NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
+    public static HashMap<String, HashMap<String, NodeInfo>> adjMap; // {uuid: [RemoteServerInfo node2, node3, ...]}
     public static HashMap<String, String> uuidToName;
-    public static HashMap<String, Integer> LSDB; // Link State Database (origin, seqNum)
-    public static HashSet<NodeInfo> activeNeighbors;
+    public static HashMap<String, Long> LSDB; // Link State Database (origin uuid, timestamp)
+    public static HashSet<NodeInfo> activeNeighbors = new HashSet<NodeInfo>();
     public static HashMap<String, Boolean> prevActiveNeighbors;
     public static HashMap<String, Double> distanceFromOrigin = new HashMap<>();
     public static Integer LSPSeqNum = 1;
+    public final static Integer TIME_TO_LIVE = 10;
 
     public VodServer() {
         VodServer.parameterMap = new HashMap<String, ArrayList<NodeInfo>>();
@@ -27,7 +28,7 @@ public class VodServer {
         VodServer.adjMap = new HashMap<>();
         VodServer.uuidToName = new HashMap<>();
         VodServer.LSDB = new HashMap<>();
-        VodServer.activeNeighbors = new HashSet<>();
+        VodServer.activeNeighbors = new HashSet<NodeInfo>();
         VodServer.prevActiveNeighbors = new HashMap<>();
     }
 
@@ -46,7 +47,7 @@ public class VodServer {
         homeNodeInfo.setNeighbor(info); // update the homeNodeInfo
     }
 
-    public static ArrayList<NodeInfo> getNeighbors() {
+    public static HashSet<NodeInfo> getNeighbors() {
         return homeNodeInfo.getNeighbors();
     }
 
@@ -78,7 +79,7 @@ public class VodServer {
         return VodServer.homeNodeInfo;
     }
 
-    public static HashMap<String, ArrayList<NodeInfo>> getAdjMap() {
+    public static HashMap<String, HashMap<String, NodeInfo>> getAdjMap() {
         return VodServer.adjMap;
     }
 

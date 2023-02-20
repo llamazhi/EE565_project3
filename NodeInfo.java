@@ -8,24 +8,32 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
-public class NodeInfo {
+public class NodeInfo implements Comparable<NodeInfo> {
     private InetAddress host;
     private String hostname;
     public Integer port;
     public Integer rate;
     private String uuid;
     private String name;
-    private int frontendPort;
-    private int backendPort;
+    private Integer frontendPort;
+    private Integer backendPort;
     private String contentDir;
-    private int peerCount;
-    private double metric;
+    private Integer peerCount;
+    private Double metric;
     private ArrayList<String> contents = new ArrayList<String>();
+    private Long timestamp;
 
-    private ArrayList<NodeInfo> neighbors = new ArrayList<NodeInfo>();
+    private HashSet<NodeInfo> neighbors;
+
+    // override equals and hashCode
+    @Override
+    public int compareTo(NodeInfo n2) {
+        return this.getUUID().compareTo(n2.getUUID());
+    }
 
     public NodeInfo(String hostname, Integer port, Integer rate) throws IOException {
         this.host = InetAddress.getByName(hostname);
@@ -103,16 +111,24 @@ public class NodeInfo {
         return this.metric;
     }
 
+    public void setTimestamp(Long timestamp) throws IOException {
+        this.timestamp = timestamp;
+    }
+
+    public Long getTimestamp() {
+        return this.timestamp;
+    }
+
     public void setNeighbor(NodeInfo info) {
         this.neighbors.add(info);
     }
 
-    public ArrayList<NodeInfo> getNeighbors() {
+    public HashSet<NodeInfo> getNeighbors() {
         return this.neighbors;
     }
 
     public NodeInfo() {
-        this.neighbors = new ArrayList<>();
+        this.neighbors = new HashSet<>();
     }
 
     // take in a query of values and set fields with corresponding values
@@ -189,12 +205,27 @@ public class NodeInfo {
         return config;
     }
 
-    public String toNeighborFormat() {
-        return this.getUUID() + ","
+    public static NodeInfo parseLSPFormat(String message) throws IOException {
+        NodeInfo config = new NodeInfo();
+        String[] values = message.split(",");
+        config.setName(values[0].trim());
+        config.setUUID(values[1].trim());
+        config.setHost(values[2].trim());
+        config.setFrontendPort(Integer.parseInt(values[3].trim()));
+        config.setBackendPort(Integer.parseInt(values[4].trim()));
+        config.setMetric(Double.parseDouble(values[5].trim()));
+        config.setContentDir(values[6].trim());
+        return config;
+    }
+
+    public String toLSPFormat() {
+        return this.getName() + ","
+                + this.getUUID() + ","
                 + this.getHostname() + ","
                 + this.getFrontendPort() + ","
                 + this.getBackendPort() + ","
-                + this.getMetric();
+                + this.getMetric() + ","
+                + this.getContentDir();
     }
 
     @Override
