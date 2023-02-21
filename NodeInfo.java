@@ -25,7 +25,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
     private String contentDir;
     private Integer peerCount;
     private Double metric;
-    private ArrayList<String> contents = new ArrayList<String>();
+    // private ArrayList<String> contents = new ArrayList<String>();
     private Long timestamp;
 
     private HashSet<NodeInfo> neighbors;

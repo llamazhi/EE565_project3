@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map;
@@ -285,27 +286,31 @@ public class ThreadedHTTPWorker extends Thread {
     private void showContentRank(String filePath) {
         try {
             // use a hashset to record all the nodes with specified content
-            TreeMap<Double, NodeInfo> nodesWithContent = new TreeMap<>();
-
-            // check the neighbor nodes of the curr node
-            for (String uuid : VodServer.distanceFromOrigin.keySet()) {
-                NodeInfo node = VodServer.uuidToInfo.get(uuid);
-                if (node.getContentDir().equals(filePath)) { // TODO: modify to certain filepath
-                    nodesWithContent.put(VodServer.distanceFromOrigin.get(uuid), node);
-                }
-            }
+            TreeMap<Double, String> metricToUUIDs = new TreeMap<>();
             JsonArray jsonArray = new JsonArray();
-            // add to the jsonArray according to the order of distance
-            for (Map.Entry<Double, NodeInfo> entry : nodesWithContent.entrySet()) {
-                if (entry.getValue().getUUID().equals(VodServer.getHomeNodeInfo().getUUID())) {
+
+            // check the associated nodes of the given filename
+            HashSet<String> uuids = VodServer.fileNameToNodes.get(filePath);
+            // System.out.println("curr recorded uuids: " + uuids);
+            for (String uuid : VodServer.distanceFromOrigin.keySet()) {
+                // skip the requested node
+                if (uuid.equals(VodServer.getHomeNodeInfo().getUUID())) {
                     continue;
+                } else {
+                    if (uuids.contains(uuid)) {
+                        metricToUUIDs.put(VodServer.distanceFromOrigin.get(uuid), uuid);
+                    }
                 }
-                Double distance = entry.getKey();
-                String name = entry.getValue().getName();
-                JsonObject nodeInfo = new JsonObject();
-                nodeInfo.addProperty(name, distance);
-                jsonArray.add(nodeInfo);
             }
+
+            for (double metric : metricToUUIDs.keySet()) {
+                JsonObject jsonObj = new JsonObject();
+                String name = VodServer.uuidToInfo.get(metricToUUIDs.get(metric)).getName();
+                jsonObj.addProperty(name, metric);
+                jsonArray.add(jsonObj);
+            }
+
+            // add to the jsonArray according to the order of distance
 
             String jsonStr = jsonArray.toString();
             String response = "HTTP/1.1 200 OK" + this.CRLF +
@@ -332,13 +337,12 @@ public class ThreadedHTTPWorker extends Thread {
 
             // may pass the parameters to UDP later
             String path = keyValue.get("path");
-            int port = Integer.parseInt(keyValue.get("port"));
-            String host = keyValue.get("host");
+            String uuid = keyValue.get("uuid");
             int rate = Integer.parseInt(keyValue.get("rate"));
-            NodeInfo info = new NodeInfo(host, port, rate);
-            VodServer.addPeer(path, info);
-            // Pass the queries to backend port
-            // At this stage, we just print them out
+            NodeInfo specifiedNode = VodServer.uuidToInfo.get(uuid);
+            NodeInfo info = new NodeInfo(specifiedNode.getHostname(), specifiedNode.getBackendPort(), rate);
+            VodServer.addPeer(path, info, uuid);
+
             String html = "<html><body><h1>Peer Added!</h1></body></html>";
             String response = "HTTP/1.1 200 OK" + this.CRLF +
                     "Date: " + getGMTDate(new Date()) + this.CRLF +

@@ -20,14 +20,25 @@ public class VodServer {
     public static HashMap<String, Integer> neighborNoResponseCount = new HashMap<>();
     public static HashMap<String, Double> distanceFromOrigin = new HashMap<>();
     public static HashMap<String, NodeInfo> uuidToInfo = new HashMap<>();
+    public static HashMap<String, HashSet<String>> fileNameToNodes = new HashMap<>();
     public static Integer LSPSeqNum = 1;
     public final static Integer TIME_TO_LIVE = 10;
 
-    public static void addPeer(String filepath, NodeInfo info) {
+    public static void addPeer(String filepath, NodeInfo info, String uuid) {
         if (!VodServer.parameterMap.containsKey(filepath)) {
             VodServer.parameterMap.put(filepath, new ArrayList<NodeInfo>());
         }
         VodServer.parameterMap.get(filepath).add(info);
+
+        // associate the fileName to the specified node and store them in VodServer
+        if (VodServer.uuidToInfo.containsKey(uuid)) {
+            if (!VodServer.fileNameToNodes.containsKey(filepath)) {
+                HashSet<String> nodes = new HashSet<>();
+                nodes.add(uuid);
+                VodServer.fileNameToNodes.put(filepath, nodes);
+            }
+            VodServer.fileNameToNodes.get(filepath).add(uuid);
+        }
     }
 
     public static HashMap<String, ArrayList<NodeInfo>> getParameterMap() {

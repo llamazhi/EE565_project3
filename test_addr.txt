@@ -1,5 +1,5 @@
-http://localhost:18345/peer/add?path=Content/test.webm&host=localhost&port=18346&rate=1000
-http://localhost:18347/peer/add?path=Content/test.webm&host=localhost&port=18348&rate=1000
+http://localhost:18345/peer/add?path=Content/test.webm&uuid=24f22a83-16f4-4bd5-af63-b5c6e979dbb&rate=1000
+http://localhost:18345/peer/add?path=Content/test.webm&uuid=3d2f4e34-6d21-4dda-aa78-796e3507903c&rate=1000
 http://localhost:18345/peer/view/Content/test.webm
 http://localhost:18345/peer/config?rate=8192
 http://localhost:18345/peer/status
