@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map;
@@ -284,24 +285,29 @@ public class ThreadedHTTPWorker extends Thread {
     // [{“node2”:10}, {“node3”:20}, {“node4”:50}]
     private void showContentRank(String filePath) {
         try {
+            System.out.println("curr filePath: " + filePath);
             // use a hashset to record all the nodes with specified content
-            TreeMap<Double, NodeInfo> nodesWithContent = new TreeMap<>();
+            TreeMap<Double, String> nodesWithContent = new TreeMap<>();
 
             // check the neighbor nodes of the curr node
             for (String uuid : VodServer.distanceFromOrigin.keySet()) {
                 NodeInfo node = VodServer.uuidToInfo.get(uuid);
-                if (node.getContentDir().equals(filePath)) { // TODO: modify to certain filepath
-                    nodesWithContent.put(VodServer.distanceFromOrigin.get(uuid), node);
+                // System.out.println("node info: " + node);
+                String nodeName = node.getName();
+                HashSet<String> fileNames = node.getFileNames();
+                // System.out.println("curr fileNames: " + fileNames);
+                if (fileNames.contains(filePath)) {
+                    nodesWithContent.put(VodServer.distanceFromOrigin.get(uuid), nodeName);
                 }
             }
             JsonArray jsonArray = new JsonArray();
             // add to the jsonArray according to the order of distance
-            for (Map.Entry<Double, NodeInfo> entry : nodesWithContent.entrySet()) {
-                if (entry.getValue().getUUID().equals(VodServer.getHomeNodeInfo().getUUID())) {
+            for (Map.Entry<Double, String> entry : nodesWithContent.entrySet()) {
+                if (entry.getValue().equals(VodServer.getHomeNodeInfo().getName())) {
                     continue;
                 }
                 Double distance = entry.getKey();
-                String name = entry.getValue().getName();
+                String name = entry.getValue();
                 JsonObject nodeInfo = new JsonObject();
                 nodeInfo.addProperty(name, distance);
                 jsonArray.add(nodeInfo);
@@ -320,6 +326,7 @@ public class ThreadedHTTPWorker extends Thread {
     }
 
     // store the parameter information
+    // TODO: modify for project 3 (i.e. use UUID instead of host, port)
     private void addPeer(String[] queries) {
         try {
             // System.out.println("addPeer reached");
@@ -332,6 +339,7 @@ public class ThreadedHTTPWorker extends Thread {
 
             // may pass the parameters to UDP later
             String path = keyValue.get("path");
+            VodServer.getHomeNodeInfo().setFileName(path); // add the filename to record
             int port = Integer.parseInt(keyValue.get("port"));
             String host = keyValue.get("host");
             int rate = Integer.parseInt(keyValue.get("rate"));

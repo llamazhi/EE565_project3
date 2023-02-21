@@ -123,10 +123,12 @@ public class UDPServer extends Thread {
                 }
             }
             this.parseLSP(requestString);
+            // System.out.println("requestString: " + requestString);
             // VodServer.setUUIDToName(this.sender.getUUID(), this.sender.getName());
             // VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
             VodServer.uuidToInfo.put(this.origin.getUUID(), this.origin);
             VodServer.uuidToInfo.put(this.sender.getUUID(), this.sender);
+            // System.out.println("curr uuidToInfo: " + VodServer.uuidToInfo);
 
             if (VodServer.LSDB.containsKey(this.origin.getUUID())) {
                 if (this.LSPTimestamp <= VodServer.LSDB.get(this.origin.getUUID())) {

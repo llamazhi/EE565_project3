@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
     private String contentDir;
     private Integer peerCount;
     private Double metric;
-    private ArrayList<String> contents = new ArrayList<String>();
+    private HashSet<String> fileNames = new HashSet<>();
     private Long timestamp;
 
     private HashSet<NodeInfo> neighbors;
@@ -128,6 +129,18 @@ public class NodeInfo implements Comparable<NodeInfo> {
         return this.neighbors;
     }
 
+    public void setFileName(String filePath) {
+        this.fileNames.add(filePath);
+    }
+
+    public void setAllFileNames(HashSet<String> files) {
+        this.fileNames = files;
+    }
+
+    public HashSet<String> getFileNames() {
+        return this.fileNames;
+    }
+
     public NodeInfo() {
         this.neighbors = new HashSet<>();
     }
@@ -215,7 +228,12 @@ public class NodeInfo implements Comparable<NodeInfo> {
         config.setFrontendPort(Integer.parseInt(values[3].trim()));
         config.setBackendPort(Integer.parseInt(values[4].trim()));
         config.setMetric(Double.parseDouble(values[5].trim()));
-        config.setContentDir(values[6].trim());
+        HashSet<String> fileNames = new HashSet<>();
+        for (String fileName : Arrays.asList(values[6])) {
+            fileName = fileName.replaceAll("[\\[\\]]", "");
+            fileNames.add(fileName);
+        }
+        config.setAllFileNames(fileNames);
         return config;
     }
 
@@ -226,15 +244,16 @@ public class NodeInfo implements Comparable<NodeInfo> {
                 + this.getFrontendPort() + ","
                 + this.getBackendPort() + ","
                 + this.getMetric() + ","
-                + this.getContentDir();
+                + this.getFileNames();
     }
 
     @Override
     public String toString() {
-        return "RemoteServerInfo{"
+        return "RemoteServerInfo {"
                 + "uuid='" + uuid + '\''
                 + ", name='" + name + '\''
                 + ", metric='" + metric + '\''
+                + ", fileNames='" + fileNames + '\''
                 + '}';
     }
 }

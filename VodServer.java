@@ -27,6 +27,7 @@ public class VodServer {
         if (!VodServer.parameterMap.containsKey(filepath)) {
             VodServer.parameterMap.put(filepath, new ArrayList<NodeInfo>());
         }
+        // VodServer.uuidToInfo.get(VodServer.homeNodeInfo.getUUID()).setFileNames(filepath);
         VodServer.parameterMap.get(filepath).add(info);
     }
 
