@@ -85,14 +85,6 @@ public class VodServer {
         return VodServer.adjMap;
     }
 
-    // public static HashMap<String, String> getUUIDToName() {
-    // return uuidToName;
-    // }
-
-    // public static void setUUIDToName(String uuid, String name) {
-    // VodServer.uuidToName.put(uuid, name);
-    // }
-
     public void setServerInfo(NodeInfo config) {
         VodServer.homeNodeInfo = config;
     }

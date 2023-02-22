@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +24,6 @@ public class NodeInfo implements Comparable<NodeInfo> {
     private String contentDir;
     private Integer peerCount;
     private Double metric;
-    // private ArrayList<String> contents = new ArrayList<String>();
     private Long timestamp;
 
     private HashSet<NodeInfo> neighbors;
@@ -135,7 +133,6 @@ public class NodeInfo implements Comparable<NodeInfo> {
     // take in a query of values and set fields with corresponding values
     public static NodeInfo parseNeighbor(HashMap<String, String> values) throws IOException {
         NodeInfo neighborConfig = new NodeInfo();
-        // peerConfig.setName(name);
         neighborConfig.setUUID(values.get("uuid"));
         neighborConfig.setHost(values.get("host"));
         neighborConfig.setFrontendPort(Integer.parseInt(values.get("frontend")));
@@ -149,7 +146,6 @@ public class NodeInfo implements Comparable<NodeInfo> {
     public static NodeInfo parseNeighbor(String name, String info) throws IOException {
         NodeInfo neighborConfig = new NodeInfo();
         String[] values = info.split(",");
-        // System.out.println(values.toString());
         neighborConfig.setName(name);
         neighborConfig.setUUID(values[0].trim());
         neighborConfig.setHost(values[1].trim());
@@ -180,7 +176,6 @@ public class NodeInfo implements Comparable<NodeInfo> {
         config.setFrontendPort(Integer.parseInt(configMap.get("frontend_port")));
         config.setBackendPort(Integer.parseInt(configMap.get("backend_port")));
         config.setContentDir(configMap.get("content_dir"));
-        // config.setPeerCount(Integer.parseInt(configMap.get("peer_count")));
         config.setHost("localhost");
 
         // generate a new uuid and write back to config file if no uuid assigned

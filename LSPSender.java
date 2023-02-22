@@ -95,8 +95,6 @@ public class LSPSender extends Thread {
                 VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
                 NodeInfo curr = VodServer.getHomeNodeInfo();
                 HashMap<String, NodeInfo> neighbors = VodServer.activeNeighbors;
-                // System.out.println("curr node: " + curr.getName());
-                // System.out.println("active neighbors: " + neighbors);
                 Long currentTime = System.currentTimeMillis();
                 String message = LSPSender.LSPMessageConstructor(VodServer.LSPSeqNum, currentTime, curr, curr,
                         neighbors);

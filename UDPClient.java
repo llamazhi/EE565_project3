@@ -7,27 +7,13 @@ public class UDPClient {
     private final static int bufferSize = 8192;
     private final String CRLF = "\r\n";
 
-    public static void intToByteArray(int value, byte[] buffer) {
-        buffer[0] = (byte) (value >>> 24);
-        buffer[1] = (byte) (value >>> 16);
-        buffer[2] = (byte) (value >>> 8);
-        buffer[3] = (byte) value;
-    };
-
-    public static int byteArrayToInt(byte[] bytes) {
-        return (bytes[0] << 24) & 0xff000000 |
-                (bytes[1] << 16) & 0x00ff0000 |
-                (bytes[2] << 8) & 0x0000ff00 |
-                (bytes[3] & 0xff);
-    }
-
     public String startClient(String path, ArrayList<NodeInfo> remoteNodes, DataOutputStream outputStream) {
         try (DatagramSocket socket = new DatagramSocket(0)) {
             // send request packet
 
             byte[] requestData = new byte[bufferSize];
             byte[] receiveData = new byte[bufferSize];
-            intToByteArray(0, requestData);
+            VodServer.intToByteArray(0, requestData);
 
             for (NodeInfo udpserver : remoteNodes) {
                 String message = path + " " + udpserver.rate;
@@ -84,7 +70,7 @@ public class UDPClient {
                     // send request for unreceived chunk within the window
                     for (int i = windowStart; i <= windowEnd; i++) {
                         if (!seen.contains(i)) {
-                            intToByteArray(i, requestData);
+                            VodServer.intToByteArray(i, requestData);
                             NodeInfo udpserver = remoteNodes.get(i % remoteNodes.size());
                             DatagramPacket outPkt = new DatagramPacket(requestData, requestData.length,
                                     udpserver.getHost(),
@@ -99,7 +85,7 @@ public class UDPClient {
                             inPkt = new DatagramPacket(new byte[bufferSize], bufferSize);
                             socket.setSoTimeout(100);
                             socket.receive(inPkt);
-                            int seqNum = byteArrayToInt(inPkt.getData());
+                            int seqNum = VodServer.byteArrayToInt(inPkt.getData());
                             System.out.println("get No." + seqNum + " packet from: " + inPkt.getPort() + " port");
                             if (seqNum < 0 || seqNum > numChunks || seen.contains(seqNum)) {
                                 continue;

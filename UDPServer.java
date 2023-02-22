@@ -30,20 +30,6 @@ public class UDPServer extends Thread {
         this.pathToBitRate = new HashMap<>();
     }
 
-    public static void intToByteArray(int value, byte[] buffer) {
-        buffer[0] = (byte) (value >>> 24);
-        buffer[1] = (byte) (value >>> 16);
-        buffer[2] = (byte) (value >>> 8);
-        buffer[3] = (byte) value;
-    };
-
-    public static int byteArrayToInt(byte[] bytes) {
-        return (bytes[0] << 24) & 0xff000000 |
-                (bytes[1] << 16) & 0x00ff0000 |
-                (bytes[2] << 8) & 0x0000ff00 |
-                (bytes[3] & 0xff);
-    }
-
     private void parseLSP(String LSPData) throws IOException {
         String[] lines = LSPData.split(" ");
         Map<String, String> configMap = new HashMap<>();
@@ -88,7 +74,7 @@ public class UDPServer extends Thread {
     }
 
     private void handleInPacket(DatagramPacket inPkt, DatagramSocket socket) throws IOException {
-        int seqNum = byteArrayToInt(inPkt.getData());
+        int seqNum = VodServer.byteArrayToInt(inPkt.getData());
         String requestString = new String(inPkt.getData(), 4, inPkt.getLength() - 4).trim();
         int bitRate = 0;
 
@@ -99,7 +85,7 @@ public class UDPServer extends Thread {
             if (values[0].equals("HELLO")) {
                 // HELLO packet
                 if (values[1].equals("AreYouAlive?")) {
-                    // reply Yes
+                    // reply YES
                     byte[] data = new byte[bufferSize];
                     VodServer.intToByteArray(-1, data); // seqnum = -1 for LSP
                     NodeInfo neighborInfo = NodeInfo.parseLSPFormat(values[2]);
@@ -123,8 +109,6 @@ public class UDPServer extends Thread {
                 }
             }
             this.parseLSP(requestString);
-            // VodServer.setUUIDToName(this.sender.getUUID(), this.sender.getName());
-            // VodServer.setUUIDToName(this.origin.getUUID(), this.origin.getName());
             VodServer.uuidToInfo.put(this.origin.getUUID(), this.origin);
             VodServer.uuidToInfo.put(this.sender.getUUID(), this.sender);
 
@@ -190,13 +174,7 @@ public class UDPServer extends Thread {
                     }
                 }
             }
-            VodServer.distanceFromOrigin = distance;
-
-            // System.out.println("Dijkstra");
-            // for (Map.Entry<String, Double> entry : distance.entrySet()) {
-            // System.out.println("node: " + entry.getKey());
-            // System.out.println("distance: " + entry.getValue());
-            // }
+            VodServer.distanceFromOrigin = distance; // update the distance map on VodServer
 
             // flood the LSP to neighbors
             this.sender = VodServer.getHomeNodeInfo();
@@ -230,7 +208,7 @@ public class UDPServer extends Thread {
                 return;
             }
 
-            this.pathToBitRate.put(path, bitRate); // unit in bit/sec
+            this.pathToBitRate.put(path, bitRate); // unit in kbps
             this.clientInfos.put(inPkt.getSocketAddress(), path);
 
             long fileSize = requestFile.length();
@@ -252,7 +230,7 @@ public class UDPServer extends Thread {
                 byte[] chunk = new byte[bufferSize];
                 FileInputStream fis = new FileInputStream(requestFile);
                 while (fis.read(chunk, 4, bufferSize - 4) > 0) {
-                    intToByteArray(chunkIndex, chunk);
+                    VodServer.intToByteArray(chunkIndex, chunk);
                     this.fileChunks.get(path).put(chunkIndex, chunk);
                     chunkIndex++;
                     chunk = new byte[bufferSize];

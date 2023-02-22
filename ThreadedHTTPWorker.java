@@ -154,7 +154,6 @@ public class ThreadedHTTPWorker extends Thread {
                     "Content-Type: application/json" + this.CRLF +
                     "Content-Length:" + uuidStr.length() + this.CRLF +
                     this.CRLF + uuid;
-            // System.out.println(uuid.toString());
             this.outputStream.writeBytes(response);
         } catch (IOException e) {
             e.printStackTrace();
@@ -165,7 +164,6 @@ public class ThreadedHTTPWorker extends Thread {
     // A modified version of addPeer
     private void addNeighbor(String[] queries) {
         try {
-            // System.out.println("addNeighbor reached");
             HashMap<String, String> keyValue = new HashMap<>();
             for (String q : queries) {
                 String[] queryComponents = q.split("=");
@@ -240,7 +238,6 @@ public class ThreadedHTTPWorker extends Thread {
     }
 
     private void showNeighborMap() {
-        // checkNeighborsActive();
         try {
             HashMap<String, HashMap<String, NodeInfo>> adjMap = VodServer.getAdjMap();
             JsonObject homeNodeObj = new JsonObject();
@@ -258,7 +255,7 @@ public class ThreadedHTTPWorker extends Thread {
                 for (String neighborUUID : neighbors.keySet()) {
                     NodeInfo neighborInfo = neighbors.get(neighborUUID);
                     // check TTL
-                    if (currentTime - neighborInfo.getTimestamp() >= 1000 * 10) {
+                    if (currentTime - neighborInfo.getTimestamp() >= 1000 * VodServer.TIME_TO_LIVE) {
                         // information outdated
                         continue;
                     }
@@ -303,14 +300,13 @@ public class ThreadedHTTPWorker extends Thread {
                 }
             }
 
+            // add to the jsonArray according to the order of distance
             for (double metric : metricToUUIDs.keySet()) {
                 JsonObject jsonObj = new JsonObject();
                 String name = VodServer.uuidToInfo.get(metricToUUIDs.get(metric)).getName();
                 jsonObj.addProperty(name, metric);
                 jsonArray.add(jsonObj);
             }
-
-            // add to the jsonArray according to the order of distance
 
             String jsonStr = jsonArray.toString();
             String response = "HTTP/1.1 200 OK" + this.CRLF +
@@ -327,7 +323,6 @@ public class ThreadedHTTPWorker extends Thread {
     // store the parameter information
     private void addPeer(String[] queries) {
         try {
-            // System.out.println("addPeer reached");
             HashMap<String, String> keyValue = new HashMap<>();
             for (String q : queries) {
                 String[] queryComponents = q.split("=");
@@ -366,7 +361,6 @@ public class ThreadedHTTPWorker extends Thread {
             sendErrorResponse("Please add peer first!");
             return;
         }
-        // TODO: get content from the right server(s)
         String result = udpclient.startClient(path, infos, this.outputStream);
         if (!result.equals("Success")) {
             sendErrorResponse(result);
