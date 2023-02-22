@@ -29,7 +29,7 @@ public class HTTPURIParser {
 
     // Return if the uri contains "add" keyword
     public boolean hasAdd() {
-        return this.path.startsWith("/peer/add");
+        return this.path.startsWith("/peer/add?");
     }
 
     // Return if the uri contains "view" keyword
