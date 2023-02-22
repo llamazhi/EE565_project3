@@ -9,6 +9,7 @@ public class HTTPURIParser {
         try {
             this.uriObj = new URI(URI);
             this.path = uriObj.getPath();
+            System.out.println(this.path);
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
@@ -29,7 +30,7 @@ public class HTTPURIParser {
 
     // Return if the uri contains "add" keyword
     public boolean hasAdd() {
-        return this.path.startsWith("/peer/add?");
+        return this.path.equals("/peer/add");
     }
 
     // Return if the uri contains "view" keyword
