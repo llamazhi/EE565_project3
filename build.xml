@@ -1,4 +1,4 @@
-<project name="project3" default="run">
+<project name="project3" default="compile">
     <property name="classpath" value="./lib/gson.jar" />
     <target name="init">
         <mkdir dir="build"/>
@@ -8,17 +8,4 @@
         <!-- <javac classpath="./lib/json.jar" srcdir="./src" destdir="./build" includeantruntime="false"/> -->
         <javac classpath="${classpath}" srcdir="./" destdir="" includeantruntime="false"/>
     </target>
-    <target name="run" depends="compile">
-        <java classname="VodServer" fork="true">
-            <arg line="-c node1.conf"/>
-            <classpath>
-                <pathelement location="."/>
-                <fileset dir="./lib">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        </java>
-    </target>
-
-
 </project>
